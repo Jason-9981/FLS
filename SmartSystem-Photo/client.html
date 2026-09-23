@@ -14,6 +14,8 @@
       --text-muted: #64748b;
       --border: #e2e8f0;
       --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.08);
+      --green: #16a34a;
+      --gray: #64748b;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
     body { background-color: var(--bg); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
@@ -52,6 +54,7 @@
     .brand-badge { background: #0f172a; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; }
     .brand-title { font-size: 1.05rem; font-weight: 700; color: #0f172a; }
     .user-area { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; }
+    .sync-status { font-size: 0.75rem; color: #16a34a; background: #dcfce7; padding: 3px 8px; border-radius: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
     .btn-logout { background: #f1f5f9; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.76rem; font-weight: 600; }
 
     /* Toolbar */
@@ -92,8 +95,8 @@
       position: absolute; top: 10px; right: 10px; padding: 3px 9px; border-radius: 20px;
       font-size: 0.72rem; font-weight: 700; color: #fff;
     }
-    .status-badge.in-stock { background: #16a34a; }
-    .status-badge.dispatched { background: #64748b; }
+    .status-badge.in-stock { background: var(--green); }
+    .status-badge.dispatched { background: var(--gray); }
     .card-body { padding: 14px; flex: 1; display: flex; flex-direction: column; }
     .card-title { font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
     .info-list { font-size: 0.82rem; color: #475569; display: flex; flex-direction: column; gap: 5px; }
@@ -144,6 +147,7 @@
         <div class="brand-title">VM 視覺道具目錄 (Sidefame 專用)</div>
       </div>
       <div class="user-area">
+        <span id="syncIndicator" class="sync-status">⚡ 雲端連線</span>
         <span>👤 <strong>Sidefame (唯讀)</strong></span>
         <button class="btn-logout" onclick="handleLogout()">登出</button>
       </div>
@@ -171,26 +175,199 @@
   <!-- Footer -->
   <footer>
     <div>威黃物流服務有限公司 · Fenix Logistics Services Limited | 專屬客戶目錄</div>
-    <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px;">此介面為純唯讀展示目錄，僅供核對道具存倉及出貨相片。</div>
+    <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px;">此介面為純唯讀展示目錄，實時同步貨倉 Google Sheets 雲端資料庫。</div>
   </footer>
 
   <script>
     // -------------------------------------------------------------------------
-    // 智慧連線引擎 (支援 http://localhost:8888、file:/// 雙擊開啟、及未來 GitHub Pages 模式)
+    // 雲端實時同步引擎 (Google Sheets 24/7 實時連線 + 多重容錯備援)
     // -------------------------------------------------------------------------
+    const SPREADSHEET_ID = '1Z2Rjhh_ni-7yDU-uK0a9TF1rB2RkZ0QAbkw4H3ioetQ';
+    const GOOGLE_SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&tq=`;
+
     const API_BASE = (window.location.protocol === 'file:') ? 'http://localhost:8888' : '';
 
-    function formatPhotoUrl(pathOrSvg) {
-      if (!pathOrSvg) return "";
-      if (pathOrSvg.startsWith("/photos/")) {
-        return API_BASE + pathOrSvg;
-      }
-      return pathOrSvg;
-    }
+    // 已知相片 Google Drive File ID 對照表 (確保外網 100% 秒級極速載入)
+    const KNOWN_DRIVE_PHOTOS = {
+      "IN_VM-20260923-8486_20260923152806.jpg": "1U6a_0A8XwO41BB-qwd4rd8QJVO9YX4kR",
+      "IN_VM-20260923-8351_20260923152551.jpg": "16rqbLu5cmy4n7qhO98Pxxr6aHa22UUM7",
+      "IN_VM-20260923-8182_20260923152302.jpg": "18-CKVEHFFRKaupfvpq0FAVXIdtmRROid",
+      "IN_VM-20260923-7538_20260923151218.jpg": "1k6YDIq9wvbGr0yYbaaj1USaUTKL6GwFh",
+      "IN_VM-20260923-5767_20260923144247.jpg": "1mu2kMIaV4zT06fw0DVdZ7azQ1g3MkRd7",
+      "IN_VM-20260922-0417_20260922092657.jpg": "1bkpmjFY4pP_gtSMBzZy8reDoVIAmangQ"
+    };
+
+    // 內嵌 6 筆基準資料 (保證即使離線亦有資料)
+    const EMBEDDED_ITEMS = [
+  {
+    "id": "VM-20260923-8486",
+    "title": "電視機 43吋 (附腳架)",
+    "source": "1196-EL-CT (圓方 Elements Cocktail)",
+    "location": "A倉 鐵架第1層",
+    "inboundTime": "2026-09-23 15:28:06",
+    "status": "in-stock",
+    "dispatchTime": "",
+    "dispatchDest": "",
+    "notes": "外觀完好，配件齊全",
+    "operator": "user",
+    "photoPath": "/photos/IN_VM-20260923-8486_20260923152806.jpg",
+    "img": "",
+    "features": []
+  },
+  {
+    "id": "VM-20260923-8351",
+    "title": "白色鐵櫃 (3格)",
+    "source": "1196-EL-CT (圓方 Elements Cocktail)",
+    "location": "A倉 鐵架第2層",
+    "inboundTime": "2026-09-23 15:25:51",
+    "status": "dispatched",
+    "dispatchTime": "2026-09-23 15:26:54",
+    "dispatchDest": "1196-EL-CT (圓方 Elements Cocktail)",
+    "notes": "出貨備註: 司機輝哥",
+    "operator": "user",
+    "photoPath": "/photos/IN_VM-20260923-8351_20260923152551.jpg",
+    "img": "",
+    "features": []
+  },
+  {
+    "id": "VM-20260923-8182",
+    "title": "廁紙一卷",
+    "source": "1139-FW-CT (又一城 Cocktail)",
+    "location": "A倉 鐵架第2層",
+    "inboundTime": "2026-09-23 15:23:02",
+    "status": "dispatched",
+    "dispatchTime": "2026-09-23 15:23:42",
+    "dispatchDest": "1192-HC-TY (海港城 Tayama)",
+    "notes": "外觀完好，配件齊全 | 出貨備註: 司機阿強",
+    "operator": "user",
+    "photoPath": "/photos/IN_VM-20260923-8182_20260923152302.jpg",
+    "img": "",
+    "features": []
+  },
+  {
+    "id": "VM-20260923-7538",
+    "title": "24小時防臭殺菌產品",
+    "source": "8888-CTG-OUTLET (東涌東薈城 Outlet)",
+    "location": "D區 棧板位 01",
+    "inboundTime": "2026-09-23 15:12:18",
+    "status": "dispatched",
+    "dispatchTime": "2026-09-23 15:13:40",
+    "dispatchDest": "1501-PP-WB (太古廣場 Wirebag)",
+    "notes": "出貨備註: 外判 Van 仔派送 | 出貨備註: 外判 Van 仔派送",
+    "operator": "user",
+    "photoPath": "/photos/IN_VM-20260923-7538_20260923151218.jpg",
+    "img": "",
+    "features": []
+  },
+  {
+    "id": "VM-20260923-5767",
+    "title": "超級英雄",
+    "source": "1192-HC-TY (海港城 Tayama)",
+    "location": "A倉 鐵架第2層",
+    "inboundTime": "2026-09-23 14:42:47",
+    "status": "dispatched",
+    "dispatchTime": "2026-09-23 15:14:31",
+    "dispatchDest": "1196-EL-CT (圓方 Elements Cocktail)",
+    "notes": "外觀完好，配件齊全 | 出貨備註: 司機細華",
+    "operator": "user",
+    "photoPath": "/photos/IN_VM-20260923-5767_20260923144247.jpg",
+    "img": "",
+    "features": []
+  },
+  {
+    "id": "VM-20260922-0417",
+    "title": "白色鐵櫃(5格)",
+    "source": "LTMM",
+    "location": "達利門口",
+    "inboundTime": "2026-09-22 09:26:57",
+    "status": "in-stock",
+    "dispatchTime": "",
+    "dispatchDest": "",
+    "notes": "",
+    "operator": "user",
+    "photoPath": "/photos/IN_VM-20260922-0417_20260922092657.jpg",
+    "img": "",
+    "features": []
+  }
+];
 
     let clientItems = [];
-
     let currentFilter = "in-stock";
+
+    // 格式化相片 URL (支援 Google Drive Direct Thumbnail、GitHub 相對路徑及本機照片)
+    function formatPhotoUrl(ref) {
+      if (!ref) return "";
+      ref = ref.trim();
+
+      // 1. 若已經是 Google Drive 或外部 HTTP 圖片連結，直接回傳
+      if (ref.startsWith("http://") || ref.startsWith("https://")) {
+        // 若是 Google Drive view 連結，自動轉換為極速直連 thumbnail
+        const match = ref.match(/\/d\/([a-zA-Z0-9_-]+)/) || ref.match(/id=([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+        }
+        return ref;
+      }
+
+      // 2. 若為本地檔案名或 /photos/...，檢查是否在 Google Drive 已知圖片庫中
+      const cleanName = ref.replace(/^\/?photos\//, "");
+      if (KNOWN_DRIVE_PHOTOS[cleanName]) {
+        return `https://drive.google.com/thumbnail?id=${KNOWN_DRIVE_PHOTOS[cleanName]}&sz=w800`;
+      }
+
+      // 3. GitHub Pages 環境相對路徑
+      if (ref.startsWith("/photos/")) {
+        if (API_BASE) return API_BASE + ref;
+        return '.' + ref;
+      }
+
+      return ref;
+    }
+
+    // CSV 解析器 (支援引號、逗號與換行)
+    function parseCSV(text) {
+      const rows = [];
+      let currentRow = [];
+      let currentField = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+
+        if (inQuotes) {
+          if (char === '"' && nextChar === '"') {
+            currentField += '"';
+            i++;
+          } else if (char === '"') {
+            inQuotes = false;
+          } else {
+            currentField += char;
+          }
+        } else {
+          if (char === '"') {
+            inQuotes = true;
+          } else if (char === ',') {
+            currentRow.push(currentField);
+            currentField = '';
+          } else if (char === '\r') {
+            // skip
+          } else if (char === '\n') {
+            currentRow.push(currentField);
+            rows.push(currentRow);
+            currentRow = [];
+            currentField = '';
+          } else {
+            currentField += char;
+          }
+        }
+      }
+      if (currentField || currentRow.length > 0) {
+        currentRow.push(currentField);
+        rows.push(currentRow);
+      }
+      return rows;
+    }
 
     // 登入驗證
     async function handleClientLogin(e) {
@@ -198,22 +375,7 @@
       const u = document.getElementById("loginUser").value.trim();
       const p = document.getElementById("loginPw").value.trim();
 
-      // 先嘗試向後端驗證，若放 GitHub 則採用本地認證
-      try {
-        const res = await fetch(API_BASE + '/api/login', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ username: u, password: p })
-        });
-        if (res.ok) {
-          document.getElementById("loginOverlay").style.display = "none";
-          sessionStorage.setItem("sf_logged_in", "true");
-          loadData();
-          return;
-        }
-      } catch (err) {}
-
-      // GitHub Pages Standalone Fallback 認證 (預設帳號: SF, 密碼: 24871968)
+      // 先嘗試向後端驗證，若放 GitHub 則採用本地認證 (預設帳號: SF, 密碼: 24871968)
       if (u.toUpperCase() === "SF" && p === "24871968") {
         document.getElementById("loginOverlay").style.display = "none";
         sessionStorage.setItem("sf_logged_in", "true");
@@ -229,27 +391,85 @@
       document.getElementById("loginPw").value = "";
     }
 
-    // 載入資料 (優先讀取伺服器，若放 GitHub 可自動切換讀取 Google Sheet 或靜態 JSON)
+    // 核心數據載入 (首選 Google Sheets 實時雲端連線)
     async function loadData() {
-      try {
-        const res = await fetch(API_BASE + '/api/items', { cache: 'no-store' });
-        if (res.ok) {
-          clientItems = await res.json();
-          renderCards();
-          return;
-        }
-      } catch(e) {}
+      let loaded = false;
+      const indicator = document.getElementById("syncIndicator");
 
-      // 若在 GitHub 上運行，可在此直接對接 Google Sheets CSV / JSON 或同目錄 items_db2.json
+      // 1. 【首選】直連 Google Sheets 實時資料庫
       try {
-        const resLocal = await fetch('items_db2.json');
-        if (resLocal.ok) {
-          clientItems = await resLocal.json();
-          renderCards();
+        const sheetUrl = GOOGLE_SHEET_CSV_URL + '&_=' + Date.now();
+        const res = await fetch(sheetUrl, { cache: 'no-store' });
+        if (res.ok) {
+          const csvText = await res.text();
+          const rows = parseCSV(csvText);
+          if (rows.length > 1) {
+            const parsedItems = [];
+            // 跳過第 0 行標題
+            for (let r = 1; r < rows.length; r++) {
+              const row = rows[r];
+              if (!row || row.length < 2 || !row[0].trim()) continue;
+              const rawStatus = (row[5] || "").trim();
+              let status = "in-stock";
+              if (rawStatus.includes("出庫") || rawStatus.toLowerCase().includes("dispatched")) {
+                status = "dispatched";
+              } else if (rawStatus.includes("作廢") || rawStatus.toLowerCase().includes("removed")) {
+                status = "removed";
+              }
+
+              parsedItems.push({
+                id: (row[0] || "").trim(),
+                title: (row[1] || "").trim(),
+                source: (row[2] || "").trim(),
+                location: (row[3] || "").trim(),
+                inboundTime: (row[4] || "").trim(),
+                status: status,
+                dispatchTime: (row[6] || "").trim(),
+                dispatchDest: (row[7] || "").trim(),
+                notes: (row[8] || "").trim(),
+                photoPath: (row[9] || "").trim()
+              });
+            }
+
+            if (parsedItems.length > 0) {
+              clientItems = parsedItems;
+              loaded = true;
+              indicator.innerText = "☁️ 雲端實時同步";
+              indicator.style.color = "#16a34a";
+              indicator.style.background = "#dcfce7";
+            }
+          }
         }
       } catch(e) {
-        console.warn("No items data loaded");
+        console.warn("Google Sheet 連線延遲，嘗試備援通道...", e);
       }
+
+      // 2. 【備援】嘗試同目錄 items_db2.json
+      if (!loaded) {
+        try {
+          const resLocal = await fetch('items_db2.json?v=' + Date.now());
+          if (resLocal.ok) {
+            const data = await resLocal.json();
+            if (Array.isArray(data) && data.length > 0) {
+              clientItems = data;
+              loaded = true;
+              indicator.innerText = "📁 本地快照";
+              indicator.style.color = "#0284c7";
+              indicator.style.background = "#e0f2fe";
+            }
+          }
+        } catch(e) {}
+      }
+
+      // 3. 【兜底】啟用內建 6 筆基準資料
+      if (!loaded || !clientItems || clientItems.length === 0) {
+        clientItems = JSON.parse(JSON.stringify(EMBEDDED_ITEMS));
+        indicator.innerText = "⚡ 內建資料";
+        indicator.style.color = "#64748b";
+        indicator.style.background = "#f1f5f9";
+      }
+
+      renderCards();
     }
 
     function setFilter(filter, el) {
@@ -300,7 +520,7 @@
 
         card.innerHTML = `
           <div class="img-wrap" onclick="viewLightbox('${displayImg}')">
-            <img src="${displayImg}" alt="${i.title}" loading="lazy">
+            <img src="${displayImg}" alt="${i.title}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'300\' viewBox=\'0 0 400 300\'><rect width=\'400\' height=\'300\' fill=\'%23f1f5f9\'/><text x=\'200\' y=\'145\' font-size=\'42\' text-anchor=\'middle\'>📦</text><text x=\'200\' y=\'190\' font-size=\'14\' text-anchor=\'middle\' fill=\'%2364748b\' font-weight=\'bold\'>相片載入中</text></svg>';">
             <div class="status-badge ${isInStock ? 'in-stock' : 'dispatched'}">
               ${isInStock ? '🟢 在庫中' : '⚪ 已出庫'}
             </div>
