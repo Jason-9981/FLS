@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FLS x Sidefame · VM 視覺道具目錄 (客戶專屬查閱版)</title>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; }
+    body { background-color: var(--bg); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Client Login Modal */
+    #loginOverlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center; z-index: 9999;
+    }
+    .login-box {
+      background: #fff; width: 90%; max-width: 400px; padding: 32px 26px; border-radius: 16px;
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.25); text-align: center;
+    }
+    .login-box h2 { font-size: 1.25rem; color: #0f172a; margin-bottom: 4px; font-weight: 700; }
+    .login-box p { font-size: 0.84rem; color: var(--text-muted); margin-bottom: 20px; }
+    .input-group { margin-bottom: 14px; text-align: left; }
+    .input-group label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 5px; color: #334155; }
+    .input-group input {
+      width: 100%; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+    }
+    .input-group input:focus { border-color: var(--primary); }
+    .btn-login {
+      width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none;
+      border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 8px;
+    }
+    .btn-login:hover { background: var(--primary-hover); }
+
+    /* Header */
+    header {
+      background: #fff; border-bottom: 1px solid var(--border); padding: 12px 20px;
+      position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .header-main { max-width: 1440px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
+    .brand-area { display: flex; align-items: center; gap: 10px; }
+    .brand-badge { background: #0f172a; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; }
+    .brand-title { font-size: 1.05rem; font-weight: 700; color: #0f172a; }
+    .user-area { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; }
+    .btn-logout { background: #f1f5f9; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.76rem; font-weight: 600; }
+
+    /* Toolbar */
+    .toolbar {
+      max-width: 1440px; margin: 16px auto 10px; padding: 0 20px; width: 100%;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .search-input {
+      width: 100%; padding: 11px 16px; border: 1.5px solid var(--border); border-radius: 10px;
+      background: #fff; font-size: 0.92rem; outline: none; box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .filter-tabs { display: flex; gap: 8px; align-items: center; }
+    .filter-tab {
+      padding: 7px 16px; font-size: 0.82rem; font-weight: 600; border: 1px solid var(--border);
+      background: #fff; border-radius: 20px; cursor: pointer; color: #475569; white-space: nowrap;
+    }
+    .filter-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    /* Gallery Grid */
+    .grid-container {
+      max-width: 1440px; margin: 10px auto 40px; padding: 0 20px; width: 100%;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px;
+    }
+    @media (max-width: 640px) {
+      .grid-container { grid-template-columns: 1fr; padding: 0 12px; }
+      .toolbar { padding: 0 12px; }
+    }
+    .item-card {
+      background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border);
+      overflow: hidden; box-shadow: var(--shadow); display: flex; flex-direction: column;
+    }
+    .img-wrap {
+      width: 100%; height: 220px; background: #f1f5f9; position: relative; overflow: hidden; cursor: pointer;
+    }
+    .img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s; }
+    .img-wrap:hover img { transform: scale(1.04); }
+    .status-badge {
+      position: absolute; top: 10px; right: 10px; padding: 3px 9px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 700; color: #fff;
+    }
+    .status-badge.in-stock { background: #16a34a; }
+    .status-badge.dispatched { background: #64748b; }
+    .card-body { padding: 14px; flex: 1; display: flex; flex-direction: column; }
+    .card-title { font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 8px; }
+    .info-list { font-size: 0.82rem; color: #475569; display: flex; flex-direction: column; gap: 5px; }
+    .info-item { display: flex; justify-content: space-between; border-bottom: 1px dashed #f1f5f9; padding-bottom: 3px; }
+    .info-label { color: var(--text-muted); font-size: 0.78rem; }
+    .info-val { font-weight: 600; color: #1e293b; max-width: 60%; text-align: right; }
+
+    /* Lightbox */
+    #lightbox {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.92); display: none; align-items: center; justify-content: center;
+      z-index: 20000; cursor: pointer;
+    }
+    #lightbox img { max-width: 92%; max-height: 92%; border-radius: 8px; box-shadow: 0 0 25px rgba(255,255,255,0.25); }
+
+    footer {
+      margin-top: auto; background: #fff; border-top: 1px solid var(--border); padding: 16px 20px;
+      font-size: 0.76rem; color: #64748b; text-align: center; line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Modal -->
+  <div id="loginOverlay">
+    <div class="login-box">
+      <div style="font-size: 2.2rem; margin-bottom: 6px;">🏬</div>
+      <h2>Sidefame 客戶專屬目錄</h2>
+      <p>FLS 威黃物流 · VM 道具庫存查閱目錄</p>
+      <form id="loginForm" onsubmit="handleClientLogin(event)">
+        <div class="input-group">
+          <label>帳號 (Username)</label>
+          <input type="text" id="loginUser" placeholder="請輸入客戶帳號 (如 SF)" required autocomplete="username">
+        </div>
+        <div class="input-group">
+          <label>密碼 (Password)</label>
+          <input type="password" id="loginPw" placeholder="請輸入密碼" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-login">登入目錄</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header>
+    <div class="header-main">
+      <div class="brand-area">
+        <span class="brand-badge">FLS x SF</span>
+        <div class="brand-title">VM 視覺道具目錄 (Sidefame 專用)</div>
+      </div>
+      <div class="user-area">
+        <span>👤 <strong>Sidefame (唯讀)</strong></span>
+        <button class="btn-logout" onclick="handleLogout()">登出</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <input type="text" class="search-input" id="searchKeyword" placeholder="🔍 搜尋道具名稱、門市 Code ID (如 1196)、貨架位置或備註..." oninput="renderCards()">
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="in-stock" onclick="setFilter('in-stock', this)">🟢 在庫道具 (<span id="countInStock">0</span>)</button>
+      <button class="filter-tab" data-filter="dispatched" onclick="setFilter('dispatched', this)">⚪ 已出庫 (<span id="countDispatched">0</span>)</button>
+      <button class="filter-tab" data-filter="all" onclick="setFilter('all', this)">全部道具 (<span id="countAll">0</span>)</button>
+    </div>
+  </div>
+
+  <!-- Cards Grid -->
+  <div class="grid-container" id="cardsGrid"></div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" onclick="this.style.display='none'">
+    <img id="lightboxImg" src="">
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div>威黃物流服務有限公司 · Fenix Logistics Services Limited | 專屬客戶目錄</div>
+    <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 3px;">此介面為純唯讀展示目錄，僅供核對道具存倉及出貨相片。</div>
+  </footer>
+
+  <script>
+    // -------------------------------------------------------------------------
+    // 智慧連線引擎 (支援 http://localhost:8888、file:/// 雙擊開啟、及未來 GitHub Pages 模式)
+    // -------------------------------------------------------------------------
+    const API_BASE = (window.location.protocol === 'file:') ? 'http://localhost:8888' : '';
+
+    function formatPhotoUrl(pathOrSvg) {
+      if (!pathOrSvg) return "";
+      if (pathOrSvg.startsWith("/photos/")) {
+        return API_BASE + pathOrSvg;
+      }
+      return pathOrSvg;
+    }
+
+    let clientItems = [];
+
+    let currentFilter = "in-stock";
+
+    // 登入驗證
+    async function handleClientLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById("loginUser").value.trim();
+      const p = document.getElementById("loginPw").value.trim();
+
+      // 先嘗試向後端驗證，若放 GitHub 則採用本地認證
+      try {
+        const res = await fetch(API_BASE + '/api/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ username: u, password: p })
+        });
+        if (res.ok) {
+          document.getElementById("loginOverlay").style.display = "none";
+          sessionStorage.setItem("sf_logged_in", "true");
+          loadData();
+          return;
+        }
+      } catch (err) {}
+
+      // GitHub Pages Standalone Fallback 認證 (預設帳號: SF, 密碼: 24871968)
+      if (u.toUpperCase() === "SF" && p === "24871968") {
+        document.getElementById("loginOverlay").style.display = "none";
+        sessionStorage.setItem("sf_logged_in", "true");
+        loadData();
+      } else {
+        alert("帳號或密碼不正確，請重新輸入！");
+      }
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem("sf_logged_in");
+      document.getElementById("loginOverlay").style.display = "flex";
+      document.getElementById("loginPw").value = "";
+    }
+
+    // 載入資料 (優先讀取伺服器，若放 GitHub 可自動切換讀取 Google Sheet 或靜態 JSON)
+    async function loadData() {
+      try {
+        const res = await fetch(API_BASE + '/api/items', { cache: 'no-store' });
+        if (res.ok) {
+          clientItems = await res.json();
+          renderCards();
+          return;
+        }
+      } catch(e) {}
+
+      // 若在 GitHub 上運行，可在此直接對接 Google Sheets CSV / JSON 或同目錄 items_db2.json
+      try {
+        const resLocal = await fetch('items_db2.json');
+        if (resLocal.ok) {
+          clientItems = await resLocal.json();
+          renderCards();
+        }
+      } catch(e) {
+        console.warn("No items data loaded");
+      }
+    }
+
+    function setFilter(filter, el) {
+      currentFilter = filter;
+      document.querySelectorAll(".filter-tab").forEach(t => t.classList.remove("active"));
+      el.classList.add("active");
+      renderCards();
+    }
+
+    function renderCards() {
+      const q = document.getElementById("searchKeyword").value.trim().toLowerCase();
+      const grid = document.getElementById("cardsGrid");
+      grid.innerHTML = "";
+
+      let inStock = 0, dispatched = 0;
+      clientItems.forEach(i => {
+        if (i.status === "in-stock") inStock++;
+        else if (i.status === "dispatched") dispatched++;
+      });
+      document.getElementById("countInStock").innerText = inStock;
+      document.getElementById("countDispatched").innerText = dispatched;
+      document.getElementById("countAll").innerText = inStock + dispatched; // 在庫 + 已出庫 (不含作廢單)
+
+      const filtered = clientItems.filter(i => {
+        const matchesFilter = (currentFilter === "all") || (i.status === currentFilter);
+        const matchesKeyword = !q || 
+          (i.title && i.title.toLowerCase().includes(q)) || 
+          (i.source && i.source.toLowerCase().includes(q)) || 
+          (i.location && i.location.toLowerCase().includes(q)) || 
+          (i.dispatchDest && i.dispatchDest.toLowerCase().includes(q)) ||
+          (i.notes && i.notes.toLowerCase().includes(q));
+        return matchesFilter && matchesKeyword && i.status !== "removed";
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #94a3b8;">
+          <div style="font-size: 3rem; margin-bottom: 8px;">📭</div>
+          <div style="font-size: 1.05rem; font-weight: 600;">沒有符合條件的道具記錄</div>
+        </div>`;
+        return;
+      }
+
+      filtered.forEach(i => {
+        const card = document.createElement("div");
+        card.className = "item-card";
+        const isInStock = i.status === "in-stock";
+        const displayImg = formatPhotoUrl(i.photoPath) || i.img || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'><rect width='400' height='300' fill='%23f1f5f9'/><text x='200' y='145' font-size='42' text-anchor='middle'>📦</text><text x='200' y='190' font-size='14' text-anchor='middle' fill='%2364748b' font-weight='bold'>無相片記錄</text></svg>";
+
+        card.innerHTML = `
+          <div class="img-wrap" onclick="viewLightbox('${displayImg}')">
+            <img src="${displayImg}" alt="${i.title}" loading="lazy">
+            <div class="status-badge ${isInStock ? 'in-stock' : 'dispatched'}">
+              ${isInStock ? '🟢 在庫中' : '⚪ 已出庫'}
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-title">${i.title}</div>
+            <div class="info-list">
+              <div class="info-item">
+                <span class="info-label">來源門市</span>
+                <span class="info-val">${i.source}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">存放位置</span>
+                <span class="info-val">📍 ${i.location}</span>
+              </div>
+              ${!isInStock ? `
+              <div class="info-item" style="color: #64748b;">
+                <span class="info-label">送往目的地</span>
+                <span class="info-val" style="color: #dc2626;">🚚 ${i.dispatchDest}</span>
+              </div>
+              <div class="info-item" style="color: #64748b;">
+                <span class="info-label">出庫時間</span>
+                <span class="info-val">${(i.dispatchTime || '').substring(0, 16)}</span>
+              </div>` : ''}
+              ${i.notes ? `
+              <div class="info-item">
+                <span class="info-label">備註說明</span>
+                <span class="info-val" style="font-size: 0.78rem; font-weight: normal;">${i.notes}</span>
+              </div>` : ''}
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function viewLightbox(src) {
+      if (!src) return;
+      document.getElementById("lightboxImg").src = src;
+      document.getElementById("lightbox").style.display = "flex";
+    }
+
+    if (sessionStorage.getItem("sf_logged_in") === "true") {
+      document.getElementById("loginOverlay").style.display = "none";
+      loadData();
+    }
+  </script>
+</body>
+</html>
