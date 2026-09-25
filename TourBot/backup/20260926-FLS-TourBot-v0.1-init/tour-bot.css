@@ -1,0 +1,436 @@
+/* ==========================================================================
+   FLS 專屬網頁導覽 AI 機械人 (Tour Guide Bot) - Apple Minimalist Aesthetic
+   支援：粗像素 (Pixelated Crisp) / 3D 高清 (Smooth HD) 雙模式即時切換
+   版本：v0.1 (Build 20260926)
+   ========================================================================== */
+
+:root {
+  --bot-accent: #ff6b00;
+  --bot-accent-hover: #e55e00;
+  --bot-accent-soft: rgba(255, 107, 0, 0.1);
+  --bot-bg-glass: rgba(255, 255, 255, 0.92);
+  --bot-border: rgba(0, 0, 0, 0.08);
+  --bot-shadow: 0 20px 48px rgba(0, 0, 0, 0.14), 0 4px 16px rgba(0, 0, 0, 0.05);
+  --bot-radius-panel: 22px;
+  --bot-radius-pill: 9999px;
+  --bot-text-primary: #1d1d1f;
+  --bot-text-secondary: #515154;
+  --bot-text-muted: #86868b;
+  --bot-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", sans-serif;
+}
+
+/* 懸浮總容器 */
+#fls-tour-bot-container {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 10000;
+  font-family: var(--bot-font);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+#fls-tour-bot-container * {
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+/* 縮小狀態之呼吸按鈕 (Collapsed Launcher Bubble) */
+.fls-bot-launcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  background: var(--bot-bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--bot-border);
+  border-radius: var(--bot-radius-pill);
+  box-shadow: var(--bot-shadow);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.fls-bot-launcher:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.18);
+  border-color: rgba(255, 107, 0, 0.3);
+}
+
+.fls-launcher-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.fls-launcher-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 像素銳利化關鍵樣式 (Preserve Sharp Pixel Art) */
+.fls-avatar-pixel img,
+.fls-mode-pixel .fls-avatar-img,
+.fls-mode-pixel .fls-launcher-avatar img {
+  image-rendering: -moz-crisp-edges !important;
+  image-rendering: -webkit-crisp-edges !important;
+  image-rendering: pixelated !important;
+  image-rendering: crisp-edges !important;
+}
+
+.fls-launcher-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.fls-launcher-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--bot-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fls-launcher-sub {
+  font-size: 0.75rem;
+  color: var(--bot-accent);
+  font-weight: 600;
+}
+
+/* 展開的主面板 (Expanded Bot Dialog Box) */
+.fls-bot-panel {
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  height: 520px;
+  max-height: calc(100vh - 120px);
+  background: var(--bot-bg-glass);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid var(--bot-border);
+  border-radius: var(--bot-radius-panel);
+  box-shadow: var(--bot-shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin-bottom: 12px;
+  opacity: 0;
+  transform: translateY(20px) scale(0.96);
+  pointer-events: none;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fls-bot-panel.active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* 頂部標題列 (Header) */
+.fls-bot-header {
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.65);
+  border-bottom: 1px solid var(--bot-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fls-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fls-bot-header-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+
+.fls-bot-header-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fls-bot-info h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--bot-text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fls-bot-info p {
+  font-size: 0.75rem;
+  color: var(--bot-text-muted);
+  margin: 2px 0 0 0;
+}
+
+.fls-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fls-icon-btn {
+  background: transparent;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--bot-text-secondary);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.fls-icon-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--bot-text-primary);
+}
+
+/* 雙模式切換控制列 (Avatar Mode Segmented Switcher) */
+.fls-mode-toolbar {
+  padding: 8px 16px;
+  background: rgba(245, 245, 247, 0.7);
+  border-bottom: 1px solid var(--bot-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.fls-segmented-control {
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.06);
+  padding: 2px;
+  border-radius: var(--bot-radius-pill);
+}
+
+.fls-seg-btn {
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  border-radius: var(--bot-radius-pill);
+  cursor: pointer;
+  color: var(--bot-text-secondary);
+  transition: all 0.2s ease;
+}
+
+.fls-seg-btn.active {
+  background: #ffffff;
+  color: var(--bot-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.fls-current-topic-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--bot-accent);
+  background: var(--bot-accent-soft);
+  padding: 3px 8px;
+  border-radius: var(--bot-radius-pill);
+  max-width: 170px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 對話內容展示區 (Chat Body) */
+.fls-bot-chat-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-behavior: smooth;
+}
+
+.fls-msg-bubble {
+  max-width: 92%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  position: relative;
+  word-break: break-word;
+}
+
+.fls-msg-bot {
+  background: #ffffff;
+  color: var(--bot-text-primary);
+  border: 1px solid var(--bot-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.fls-msg-user {
+  background: var(--bot-accent);
+  color: #ffffff;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 2px 10px rgba(255, 107, 0, 0.25);
+}
+
+.fls-msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--bot-accent);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* 正在輸入動畫 (Typing Dots) */
+.fls-typing-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid var(--bot-border);
+  width: fit-content;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.fls-typing-indicator span {
+  width: 6px;
+  height: 6px;
+  background: var(--bot-accent);
+  border-radius: 50%;
+  animation: fls-bounce 1.2s infinite ease-in-out both;
+}
+
+.fls-typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.fls-typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes fls-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1.1); opacity: 1; }
+}
+
+/* 互動快捷按鈕 (Quick Reply Chips) */
+.fls-quick-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.fls-chip-btn {
+  background: rgba(255, 107, 0, 0.07);
+  color: var(--bot-accent);
+  border: 1px solid rgba(255, 107, 0, 0.25);
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fls-chip-btn:hover {
+  background: var(--bot-accent);
+  color: #ffffff;
+  border-color: var(--bot-accent);
+  transform: translateX(2px);
+}
+
+/* 底部操作與重播列 (Footer Action Bar) */
+.fls-bot-footer {
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.7);
+  border-top: 1px solid var(--bot-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fls-btn-replay {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--bot-text-secondary);
+  background: #f1f5f9;
+  border: none;
+  padding: 6px 12px;
+  border-radius: var(--bot-radius-pill);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.fls-btn-replay:hover {
+  background: #e2e8f0;
+  color: var(--bot-text-primary);
+}
+
+.fls-btn-quote-link {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: var(--bot-accent);
+  padding: 6px 14px;
+  border-radius: var(--bot-radius-pill);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.fls-btn-quote-link:hover {
+  background: var(--bot-accent-hover);
+}
+
+/* 行動裝置最佳化 */
+@media (max-width: 480px) {
+  #fls-tour-bot-container {
+    right: 14px;
+    bottom: 14px;
+  }
+  .fls-bot-panel {
+    width: calc(100vw - 28px);
+    height: 480px;
+  }
+}

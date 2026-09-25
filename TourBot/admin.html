@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="theme-white" data-style="style-a">
+<head>
+  
+  <meta charset="UTF-8" />
+<meta name="version" content="v0.1" />
+<meta name="build-date" content="2026-09-26" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理後台控制中心 (CMS) - 威黃物流服務有限公司</title>
+  <link rel="stylesheet" href="styles.css?v=20260924_03" />
+  <style>
+    .admin-auth-box {
+      max-width: 440px;
+      margin: 120px auto;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 44px;
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+    }
+    .admin-dashboard {
+      display: none;
+      padding: 40px 0 80px 0;
+    }
+    .admin-nav-tabs {
+      display: flex;
+      gap: 12px;
+      border-bottom: 2px solid var(--border-subtle);
+      margin-bottom: 32px;
+      overflow-x: auto;
+    }
+    .admin-tab-btn {
+      background: transparent;
+      border: none;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      padding: 12px 20px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all var(--transition-fast);
+    }
+    .admin-tab-btn.active {
+      color: var(--accent-orange);
+      border-bottom-color: var(--accent-orange);
+    }
+    .admin-panel-card {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 28px;
+    }
+  </style>
+  <link rel="stylesheet" href="tour-bot.css?v=0.1" />
+</head>
+<body style="background:var(--bg-secondary);">
+  
+
+  <!-- 獨立身分驗證登入卡片 (密碼分離存放於 admin-auth.js) -->
+  <div id="auth-container" class="admin-auth-box">
+    <div style="margin-bottom:20px;">
+      <img src="images/FLS-logo-80.jpg" alt="FLS Logo" style="height:48px; margin:0 auto 12px auto; border-radius:8px;" />
+      <h2 style="font-size:1.5rem;">FLS 管理後台登入</h2>
+      <p style="font-size:0.875rem; color:var(--text-muted); margin-top:6px;">
+        安全提示：管理者身分驗證採獨立模組隔離保護
+      </p>
+    </div>
+    <form id="admin-login-form">
+      <div class="form-group" style="text-align:left;">
+        <label for="admin-password">請輸入管理員密碼：</label>
+        <input type="password" id="admin-password" class="form-control" placeholder="••••••••" required />
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%; padding:12px;">驗證並登入控制台</button>
+      <p id="auth-error" style="color:#ff3b30; font-size:0.85rem; margin-top:14px; display:none;">密碼驗證錯誤，請重新輸入。</p>
+    </form>
+    <div style="margin-top:24px; border-top:1px solid var(--border-subtle); padding-top:16px;">
+      <a href="index.html" style="font-size:0.85rem; color:var(--text-muted);">← 返回前台首頁</a>
+    </div>
+  </div>
+
+  <!-- 管理者主控制台 (登入後顯示) -->
+  <div id="dashboard-container" class="admin-dashboard">
+    <div class="container">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <div>
+          <span class="badge badge-orange">FLS CMS CONTROL CENTER</span>
+          <h1 style="font-size:2rem; margin-top:6px;">可視化輕量管理後台</h1>
+        </div>
+        <div style="display:flex; gap:12px;">
+          <button id="btn-export-json" class="btn btn-primary">💾 匯出最新 site-data.js 檔案</button>
+          <button id="btn-admin-logout" class="btn btn-secondary">登出系統</button>
+        </div>
+      </div>
+
+      <!-- 導航 Tabs -->
+      <div class="admin-nav-tabs">
+        <button class="admin-tab-btn active" data-tab="tab-warehouses">🏢 倉庫網絡管理 (Warehouses)</button>
+        <button class="admin-tab-btn" data-tab="tab-blog">📰 網誌文章管理 (Blog)</button>
+        <button class="admin-tab-btn" data-tab="tab-clients">🤝 合作名牌管理 (Clients)</button>
+        <button class="admin-tab-btn" data-tab="tab-siteinfo">⚙️ 公司基本資料與口號</button>
+      </div>
+
+      <!-- 標籤 1：倉庫網絡管理 -->
+      <div id="tab-warehouses" class="admin-tab-content">
+        <div class="admin-panel-card">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3>現有倉儲據點列表</h3>
+            <button id="btn-add-warehouse" class="btn btn-dark" style="font-size:0.85rem; padding:6px 14px;">＋ 新增倉庫據點</button>
+          </div>
+          <p style="font-size:0.875rem; color:var(--text-muted); margin-top:4px;">
+            此處修改的倉庫資料將直接同步至前端「服務範疇 (services.html)」的動態卡片中。
+          </p>
+          <div id="warehouse-admin-list" style="margin-top:20px;"></div>
+        </div>
+      </div>
+
+      <!-- 標籤 2：網誌管理 -->
+      <div id="tab-blog" class="admin-tab-content" style="display:none;">
+        <div class="admin-panel-card">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3>網誌文章列表 (SEO 核心)</h3>
+            <button id="btn-add-post" class="btn btn-dark" style="font-size:0.85rem; padding:6px 14px;">＋ 發布新文章</button>
+          </div>
+          <div id="blog-admin-list" style="margin-top:20px;"></div>
+        </div>
+      </div>
+
+      <!-- 標籤 3：合作客戶管理 -->
+      <div id="tab-clients" class="admin-tab-content" style="display:none;">
+        <div class="admin-panel-card">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3>走馬燈合作客戶管理</h3>
+            <button id="btn-add-client" class="btn btn-dark" style="font-size:0.85rem; padding:6px 14px;">＋ 新增合作客戶</button>
+          </div>
+          <div id="client-admin-list" style="margin-top:20px;"></div>
+        </div>
+      </div>
+
+      <!-- 標籤 4：基本資料 -->
+      <div id="tab-siteinfo" class="admin-tab-content" style="display:none;">
+        <div class="admin-panel-card">
+          <h3>公司基本營運資料與宣傳標語</h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px;">
+            <div class="form-group">
+              <label>公司宣傳口號 (Slogan)：</label>
+              <input type="text" id="info-slogan" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label>服務熱線電話：</label>
+              <input type="text" id="info-phone" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label>公務電郵：</label>
+              <input type="email" id="info-email" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label>總部地址：</label>
+              <input type="text" id="info-address" class="form-control" />
+            </div>
+          </div>
+          <button id="btn-save-siteinfo" class="btn btn-primary" style="margin-top:16px;">更新基本資料</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 引入獨立密碼驗證模組與核心資料庫 -->
+  <script src="site-data.js?v=20260924_03"></script>
+  <script src="admin-auth.js?v=20260924_03"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const authBox = document.getElementById("auth-container");
+      const dashboard = document.getElementById("dashboard-container");
+      const loginForm = document.getElementById("admin-login-form");
+      const passwordInput = document.getElementById("admin-password");
+      const errorMsg = document.getElementById("auth-error");
+
+      if (AdminAuth.isAuthenticated()) {
+        showDashboard();
+      }
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errorMsg.style.display = "none";
+        const isValid = await AdminAuth.verify(passwordInput.value);
+        if (isValid) {
+          showDashboard();
+        } else {
+          errorMsg.style.display = "block";
+        }
+      });
+
+      document.getElementById("btn-admin-logout").addEventListener("click", () => {
+        AdminAuth.logout();
+        location.reload();
+      });
+
+      function showDashboard() {
+        authBox.style.display = "none";
+        dashboard.style.display = "block";
+        initDashboard();
+      }
+
+      document.querySelectorAll(".admin-tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".admin-tab-btn").forEach(b => b.classList.remove("active"));
+          document.querySelectorAll(".admin-tab-content").forEach(c => c.style.display = "none");
+          btn.classList.add("active");
+          document.getElementById(btn.dataset.tab).style.display = "block";
+        });
+      });
+
+      function initDashboard() {
+        renderWarehouses();
+        renderBlogAdmin();
+        renderClientAdmin();
+        loadSiteInfo();
+      }
+
+      function renderWarehouses() {
+        const list = document.getElementById("warehouse-admin-list");
+        if (!window.FLS_DATA.warehouses) return;
+        list.innerHTML = window.FLS_DATA.warehouses.map((wh, idx) => `
+          <div style="border:1px solid var(--border-subtle); border-radius:12px; padding:18px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong>${wh.name}</strong> <span class="badge">${wh.tag}</span> (${wh.status})<br/>
+              <span style="font-size:0.85rem; color:var(--text-muted);">${wh.address} ｜ 規模：${wh.area}</span>
+            </div>
+            <button onclick="deleteWarehouse(${idx})" class="btn btn-secondary" style="font-size:0.8rem; padding:4px 10px; color:#ff3b30;">刪除</button>
+          </div>
+        `).join("");
+      }
+
+      window.deleteWarehouse = (idx) => {
+        if (confirm("確定要刪除此倉庫節點嗎？")) {
+          window.FLS_DATA.warehouses.splice(idx, 1);
+          renderWarehouses();
+        }
+      };
+
+      document.getElementById("btn-add-warehouse").addEventListener("click", () => {
+        const name = prompt("請輸入新倉庫名稱：", "葵涌三號分倉 (Kwai Chung Annex)");
+        if (!name) return;
+        const address = prompt("請輸入倉庫地址：", "香港葵涌葵榮路優質工廈");
+        const area = prompt("請輸入規模面積：", "15,000 平方呎");
+        window.FLS_DATA.warehouses.push({
+          id: "hub-" + Date.now(),
+          name,
+          tag: "新增據點",
+          status: "營運中",
+          address: address || "香港葵涌",
+          features: ["24小時監控", "恆溫常溫靈活調配"],
+          suitableFor: "一般電商與日用品儲存",
+          area: area || "10,000 呎",
+          temp: "常溫"
+        });
+        renderWarehouses();
+      });
+
+      function renderBlogAdmin() {
+        const list = document.getElementById("blog-admin-list");
+        list.innerHTML = window.FLS_DATA.blogPosts.map((post, idx) => `
+          <div style="border:1px solid var(--border-subtle); border-radius:12px; padding:18px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <strong>${post.title}</strong> <span class="badge badge-orange">${post.category}</span><br/>
+              <span style="font-size:0.85rem; color:var(--text-muted);">${post.date} ｜ ${post.readTime}</span>
+            </div>
+            <button onclick="deletePost(${idx})" class="btn btn-secondary" style="font-size:0.8rem; padding:4px 10px; color:#ff3b30;">刪除</button>
+          </div>
+        `).join("");
+      }
+
+      window.deletePost = (idx) => {
+        if (confirm("確定刪除此文章嗎？")) {
+          window.FLS_DATA.blogPosts.splice(idx, 1);
+          renderBlogAdmin();
+        }
+      };
+
+      document.getElementById("btn-add-post").addEventListener("click", () => {
+        const title = prompt("請輸入文章標題：");
+        if (!title) return;
+        const summary = prompt("請輸入簡述摘要：");
+        const dateStr = new Date().toISOString().split("T")[0];
+        window.FLS_DATA.blogPosts.unshift({
+          id: "post-" + Date.now(),
+          title,
+          category: "電商實戰",
+          date: dateStr,
+          readTime: "3 分鐘閱讀",
+          summary: summary || "最新發布的行業實用心得...",
+          image: "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80",
+          content: summary || ""
+        });
+        renderBlogAdmin();
+      });
+
+      function renderClientAdmin() {
+        const list = document.getElementById("client-admin-list");
+        list.innerHTML = window.FLS_DATA.clients.map((c, idx) => `
+          <div style="border:1px solid var(--border-subtle); border-radius:12px; padding:14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+            <span><strong>${c.name}</strong> (${c.category}) - ${c.url}</span>
+            <button onclick="deleteClient(${idx})" class="btn btn-secondary" style="font-size:0.8rem; padding:4px 10px; color:#ff3b30;">刪除</button>
+          </div>
+        `).join("");
+      }
+
+      window.deleteClient = (idx) => {
+        window.FLS_DATA.clients.splice(idx, 1);
+        renderClientAdmin();
+      };
+
+      document.getElementById("btn-add-client").addEventListener("click", () => {
+        const name = prompt("客戶品牌名稱：");
+        if (!name) return;
+        const url = prompt("客戶官網網址：", "https://");
+        window.FLS_DATA.clients.push({ name, url: url || "#", category: "Retail Brand" });
+        renderClientAdmin();
+      });
+
+      function loadSiteInfo() {
+        const info = window.FLS_DATA.siteInfo;
+        document.getElementById("info-slogan").value = info.slogan;
+        document.getElementById("info-phone").value = info.phone;
+        document.getElementById("info-email").value = info.email;
+        document.getElementById("info-address").value = info.headquarters;
+      }
+
+      document.getElementById("btn-save-siteinfo").addEventListener("click", () => {
+        const info = window.FLS_DATA.siteInfo;
+        info.slogan = document.getElementById("info-slogan").value;
+        info.phone = document.getElementById("info-phone").value;
+        info.email = document.getElementById("info-email").value;
+        info.headquarters = document.getElementById("info-address").value;
+        alert("公司基本資料已成功在內存更新！請點擊右上角「匯出最新 site-data.js 檔案」進行儲存。");
+      });
+
+      document.getElementById("btn-export-json").addEventListener("click", () => {
+        const fileContent = "/**\n * 威黃物流服務有限公司服務有限公司 - 核心數據庫\n * 由管理後台導出於 " + new Date().toLocaleString() + "\n */\nwindow.FLS_DATA = " + JSON.stringify(window.FLS_DATA, null, 2) + ";\n";
+        const blob = new Blob([fileContent], { type: "text/javascript;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "site-data.js";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert("已下載最新 site-data.js！將其覆蓋網頁根目錄即可全站生效！");
+      });
+    });
+  </script>
+  <script src="dual-db-loader.js?v=0.2"></script>
+  <script src="tour-bot.js?v=0.1"></script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="theme-white" data-style="style-a">
+<head>
+  
+  <meta charset="UTF-8" />
+<meta name="version" content="v0.1" />
+<meta name="build-date" content="2026-09-26" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>聯絡我們與立即報價 - 威黃物流服務有限公司服務有限公司</title>
+  <meta name="description" content="聯絡 威黃物流服務有限公司。提供 30 秒快速諮詢與 3 步智能在線報價計算，支援 WhatsApp 一鍵對話與總部達利中心參觀預約。" />
+  <link rel="stylesheet" href="styles.css?v=20260924_03" />
+  <link rel="stylesheet" href="tour-bot.css?v=0.1" />
+</head>
+<body>
+  
+  
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a href="index.html" class="brand" aria-label="威黃物流服務有限公司">
+        <img src="images/FLS-logo-80.jpg" alt="FLS Logo" class="brand-logo" />
+        <div class="brand-wordmark">
+          <span class="brand-name">威黃物流服務有限公司</span>
+          <span class="brand-sub">Fenix Logistics Services Ltd.</span>
+        </div>
+      </a>
+      <nav class="main-nav" aria-label="主要導覽">
+        <a href="about.html" class="" data-i18n="navAbout">關於威黃</a>
+        <a href="services.html" class="" data-i18n="navServices">服務範疇</a>
+        <a href="brands.html" class="" data-i18n="navBrands">旗下品牌</a>
+        <a href="blog.html" class="" data-i18n="navBlog">網誌</a>
+        <a href="media.html" class="" data-i18n="navMedia">新聞及媒體</a>
+        <a href="contact.html" class="active" data-i18n="navContact">聯絡我們</a>
+        <a href="proposal.html" class="" style="color: var(--accent-orange); font-weight:700;" data-i18n="navProposal">企劃匯報</a>
+      </nav>
+      <div class="header-tools">
+        <div class="lang-switcher" aria-label="語言切換">
+          <button class="lang-btn is-active" type="button" data-lang="zh-Hant">繁</button>
+          <button class="lang-btn" type="button" data-lang="zh-Hans">簡</button>
+          <button class="lang-btn" type="button" data-lang="en">EN</button>
+        </div>
+        <a href="contact.html#quote" class="btn btn-primary" data-i18n="btnQuote">立即報價</a>
+        <button class="menu-toggle" type="button" aria-label="切換選單" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+
+  <main>
+    <section class="hero" style="padding-bottom:30px;">
+      <div class="container">
+        <span class="eyebrow">CONTACT & SMART QUOTE</span>
+        <h1>聯絡我們 ｜ 智能在線即時報價</h1>
+        <p class="hero-text">
+          我們了解每家網店與品牌的供應鏈需求皆獨一無二。選擇下方適合您的途徑，讓我們為您快速測算最省成本的方案：
+        </p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:20px;">
+      <div class="container">
+        <div class="form-layout-grid">
+          
+          <!-- 通道 A：30秒極速查詢 -->
+          <div class="form-panel">
+            <span class="eyebrow">QUICK INQUIRY</span>
+            <h3>30 秒極速諮詢</h3>
+            <p>有初步想法或一般合作詢問？只需留下基本聯絡方式，專員即日與您跟進。</p>
+            
+            <form id="quick-inquiry-form" onsubmit="return handleQuickSubmit(event)">
+              <div class="form-group">
+                <label for="quick-name">您的稱呼 / 公司名稱 *</label>
+                <input type="text" id="quick-name" name="name" class="form-control" placeholder="例如：陳先生 / ABC Trading" required />
+              </div>
+
+              <div class="form-group">
+                <label for="quick-contact">聯絡電話 / WhatsApp *</label>
+                <input type="tel" id="quick-contact" name="contact" class="form-control" placeholder="(852) 9000 0000" required />
+              </div>
+
+              <div class="form-group">
+                <label for="quick-msg">簡短需求說明 *</label>
+                <textarea id="quick-msg" name="message" class="form-control" rows="3" placeholder="例如：想了解網店按日計租收費、現有 500 件時裝想搵地方擺..." required></textarea>
+              </div>
+
+              <button type="submit" class="btn btn-dark" style="width:100%;">
+                發送快速查詢 ✉️
+              </button>
+              <div id="quick-status"></div>
+            </form>
+
+            <div style="margin-top:36px; padding-top:28px; border-top:1px solid var(--border-subtle);">
+              <h4 style="font-size:1.1rem; margin-bottom:12px;">直接聯絡專員</h4>
+              <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:8px;">
+                📞 電話：<a href="tel:+85224871968" style="color:var(--text-primary); font-weight:600;">(852) 2487 1968</a>
+              </p>
+              <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:8px;">
+                ✉️ 專屬電郵：<a href="mailto:jason@fls.com.hk" style="color:var(--text-primary); font-weight:600;">jason@fls.com.hk</a>
+              </p>
+              <div style="margin-top:10px; margin-bottom:12px;">
+                <a href="mailto:jason@fls.com.hk?subject=【業務諮詢】威黃物流服務有限公司" class="btn btn-secondary" style="width:100%; font-size:0.85rem; padding:8px 12px; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+                  ✉️ 一鍵啟動電郵客戶端直接寄信
+                </a>
+              </div>
+              <p style="font-size:0.9rem; color:var(--text-secondary);">
+                📍 總部：香港葵涌梨木道88號達利中心5樓502A-B室
+              </p>
+            </div>
+          </div>
+
+          <!-- 通道 B：3步智能報價計算器 -->
+          <div class="form-panel accent-border" id="quote">
+            <span class="eyebrow" style="background:var(--accent-orange); color:#ffffff;">RECOMMENDED • 快速核算</span>
+            <h3>智能報價計算器 (Smart Quote)</h3>
+            <p>透過 3 個簡單步驟提供詳細參數，系統將為您智能匹配最適倉儲規格與出貨運費：</p>
+
+            <form id="smart-quote-form" onsubmit="return handleQuoteSubmit(event)">
+              <!-- Wizard Steps Indicator -->
+              <div class="quote-wizard-steps">
+                <div class="step-tab active" data-step="1">1. 選擇服務模式</div>
+                <div class="step-tab" data-step="2">2. 預估貨量規模</div>
+                <div class="step-tab" data-step="3">3. 聯絡人及送出</div>
+              </div>
+
+              <!-- Step 1: 服務模式 -->
+              <div class="wizard-step-content active" data-step="1">
+                <label style="font-weight:700; display:block; margin-bottom:12px;">請選擇您所需要的物流服務（可複選）：</label>
+                <div class="select-chip-grid">
+                  <label class="select-chip">
+                    <input type="checkbox" name="quote_service" value="電商 Fulfilment (按日計租)" checked />
+                    <span>📦 網店 Fulfilment</span>
+                  </label>
+                  <label class="select-chip">
+                    <input type="checkbox" name="quote_service" value="智能倉存 (常溫/冷氣)" />
+                    <span>🏢 長期/短期倉存</span>
+                  </label>
+                  <label class="select-chip">
+                    <input type="checkbox" name="quote_service" value="定制增值服務 (貼標/包裝)" />
+                    <span>🏷️ 貼標包裝 VAS</span>
+                  </label>
+                  <label class="select-chip">
+                    <input type="checkbox" name="quote_service" value="中港跨境 / 本地商場運輸" />
+                    <span>🚛 本地及中港運輸</span>
+                  </label>
+                </div>
+                <button type="button" class="btn btn-primary" style="width:100%; margin-top:12px;" data-next-step="2" onclick="goToQuoteStep(2)">
+                  下一步：填寫貨量規模 →
+                </button>
+              </div>
+
+              <!-- Step 2: 貨量與規格 -->
+              <div class="wizard-step-content" data-step="2">
+                <div class="form-group">
+                  <label>預計每月訂單出貨量：</label>
+                  <select name="quote_volume" class="form-control">
+                    <option value="初創試營運 (< 300 單/月)">初創試營運 (< 300 單/月)</option>
+                    <option value="成長型網店 (300 - 1,000 單/月)" selected>成長型網店 (300 - 1,000 單/月)</option>
+                    <option value="成熟品牌 (1,000 - 3,000 單/月)">成熟品牌 (1,000 - 3,000 單/月)</option>
+                    <option value="大型企業 (3,000+ 單/月)">大型企業 (3,000+ 單/月)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>主要商品品類：</label>
+                  <select name="quote_cargo" class="form-control">
+                    <option value="精品時裝 / 鞋履配件">精品時裝 / 鞋履配件</option>
+                    <option value="美妝保養 / 個人護理">美妝保養 / 個人護理</option>
+                    <option value="寵物用品及食品">寵物用品及食品</option>
+                    <option value="生活百貨 / 家居用品">生活百貨 / 家居用品</option>
+                    <option value="電子數碼 / 小型電器">電子數碼 / 小型電器</option>
+                    <option value="其他商品">其他商品</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>特殊倉儲與增值要求：</label>
+                  <textarea name="quote_notes" class="form-control" rows="2" placeholder="如需恆溫冷氣、成衣吊掛、退換貨檢驗等..."></textarea>
+                </div>
+
+                <div style="display:flex; gap:12px; margin-top:16px;">
+                  <button type="button" class="btn btn-secondary" style="flex:1;" data-prev-step="1" onclick="goToQuoteStep(1)">← 上一步</button>
+                  <button type="button" class="btn btn-primary" style="flex:2;" data-next-step="3" onclick="goToQuoteStep(3)">下一步：填寫聯絡方式 →</button>
+                </div>
+              </div>
+
+              <!-- Step 3: 聯絡資訊 -->
+              <div class="wizard-step-content" data-step="3">
+                <div class="form-group">
+                  <label>公司名稱：</label>
+                  <input type="text" name="quote_company" class="form-control" placeholder="例如：ABC Fashion Ltd" required />
+                </div>
+                <div class="form-group">
+                  <label>聯絡人稱呼：</label>
+                  <input type="text" name="quote_name" class="form-control" placeholder="例如：陳經理" required />
+                </div>
+                <div class="form-group">
+                  <label>聯絡電話 / WhatsApp：</label>
+                  <input type="tel" name="quote_phone" class="form-control" placeholder="(852) 9000 0000" required />
+                </div>
+                <div class="form-group">
+                  <label>電子郵箱：</label>
+                  <input type="email" name="quote_email" class="form-control" placeholder="name@company.com" required />
+                </div>
+
+                <div style="display:flex; gap:12px; margin-top:16px;">
+                  <button type="button" class="btn btn-secondary" style="flex:1;" data-prev-step="2" onclick="goToQuoteStep(2)">← 上一步</button>
+                  <button type="submit" class="btn btn-primary btn-lg" style="flex:2;">提交並產生報價摘要 ✓</button>
+                </div>
+                <div id="quote-status"></div>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+          <img src="images/FLS-logo-80.jpg" alt="FLS Logo" style="height:32px; border-radius:6px;" />
+          <h4>Fenix Logistics Services Ltd.</h4>
+        </div>
+        <p>威黃物流服務有限公司自 1994 年成立，深耕香港及大灣區逾 30 年。以三黃集團堅實後盾，提供企業級倉配、中港冷氣快運與新一代電商智能履約方案。</p>
+        <p class="footer-tagline">服務以誠 · 真摰真心</p>
+      </div>
+      <div class="footer-col">
+        <h5>快速導航</h5>
+        <ul>
+          <li><a href="about.html">關於威黃</a></li>
+          <li><a href="services.html">服務範疇</a></li>
+          <li><a href="brands.html">旗下品牌</a></li>
+          <li><a href="blog.html">物流網誌</a></li>
+          <li><a href="media.html">新聞及媒體</a></li>
+          <li><a href="proposal.html">企劃匯報與評審</a></li>
+          <li><a href="disclaimer.html">免責聲明</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>核心物流服務</h5>
+        <ul>
+          <li><a href="services.html#warehousing">智能倉存服務</a></li>
+          <li><a href="services.html#fulfillment">電商 Fulfilment</a></li>
+          <li><a href="services.html#vas">客製化增值服務</a></li>
+          <li><a href="services.html#transport">本地及中港運輸</a></li>
+          <li><a href="http://103.243.0.131:8080/fxlsebp/login.htm" target="_blank" rel="noopener">EBP 網上查貨系統 ↗</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>總部聯絡</h5>
+        <ul>
+          <li>📍 香港葵涌梨木道88號達利中心5樓502A-B室</li>
+          <li>✉️ <a href="mailto:cs@fls.com.hk">cs@fls.com.hk</a></li>
+          <li>📞 (852) 2487 1968</li>
+          <li>💬 WhatsApp: <a href="https://api.whatsapp.com/send?phone=85297242234" target="_blank">+852 9724 2234</a></li>
+          <li>🕒 星期一至五 09:00 - 18:00</li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span class="current-year">2026</span> Fenix Logistics Services Ltd. 威黃物流服務有限公司 版權所有</p>
+        <span class="footer-version" style="font-size:0.75rem; color:#86868b; margin-left:12px;">Version: v0.1 (Build 20260926)</span>
+      <div style="display:flex; gap:20px;">
+        <a href="disclaimer.html">隱私與免責</a>
+        <a href="admin.html" style="opacity:0.75;">⚙️ 系統管理後台</a>
+      </div>
+    </div>
+  </footer>
+
+
+  <script src="site-data.js?v=20260924_03"></script>
+  <script src="script.js?v=20260924_03"></script>
+  <script src="dual-db-loader.js?v=0.2"></script>
+  <script src="tour-bot.js?v=0.1"></script>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!-- ====================================================================
+     FLS 企業級 GEO (生成式 AI + 地理在地化) 及 SEO 核心中樞模組
+     版本：v0.22 (2026-09-25)
+     包含：
+     1. 版本宣告 (Version Meta Tag)
+     2. 傳統搜尋引擎 SEO (Title / Description / Keywords / Canonical)
+     3. 地理在地化 GEO (Geographic Meta Tags / 葵涌達利中心精確坐標)
+     4. 生成式 AI 知識圖譜 (Schema.org JSON-LD LogisticsService & Organization)
+     5. 生成式 AI 對話引用知識庫 (Schema.org FAQPage)
+     6. 社群分享大圖卡片 (Open Graph & Twitter Cards)
+     ==================================================================== -->
+
+<!-- 1. 版本控制標準 (Project Release Standards) -->
+<meta name="version" content="v0.22" />
+<meta name="build-date" content="2026-09-25" />
+<meta name="author" content="Jason Chow (I&TD) - Fenix Logistics Services Ltd." />
+
+<!-- 2. 傳統 SEO 優化 -->
+<title>香港電商倉存與第三方物流 (3PL) 專家 | 威黃物流 FLS - 30年信譽 · 葵涌深圳12萬呎倉</title>
+<meta name="description" content="威黃物流服務有限公司 (FLS) 隸屬 FENIX GROUP，1994年成立，深耕香港30年。專注國際時尚精品倉儲、中小網店「按日計租」電商 fulfillment、揀貨包裝及中港跨境物流。總部設於葵涌達利中心，管理港深 6 大專業倉儲。" />
+<meta name="keywords" content="香港網店倉存, 電商代出貨, fulfillment 香港, 葵涌倉庫, 達利中心倉庫, 3PL 第三方物流, 按日計租倉, 執貨包裝服務, 威黃物流, Fenix Logistics, FLS, 跨境物流, 深圳保稅倉" />
+<link rel="canonical" href="https://fls.com.hk/" />
+
+<!-- 3. 地理在地化 GEO (Geographic Meta Tags - 香港葵涌總部精準定位) -->
+<meta name="geo.region" content="HK-NWT" />
+<meta name="geo.placename" content="Kwai Chung, New Territories, Hong Kong" />
+<meta name="geo.position" content="22.3686;114.1362" />
+<meta name="ICBM" content="22.3686, 114.1362" />
+
+<!-- 4. 社群分享卡片 (Open Graph & Twitter Cards) -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="威黃物流服務有限公司 Fenix Logistics Services Ltd." />
+<meta property="og:title" content="大公司級數的倉配支援，中小網店同樣輕鬆擁有 | 威黃物流 FLS" />
+<meta property="og:description" content="30年香港老牌企業級第三方物流。按日計租零死約、一件代發、自研EBP系統。服務國際精品與新世代電商。" />
+<meta property="og:image" content="https://fls.com.hk/images/FLS-logo-80.jpg" />
+<meta property="og:url" content="https://fls.com.hk/" />
+<meta property="og:locale" content="zh_HK" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="香港電商倉存與第三方物流專家 | 威黃物流 FLS" />
+<meta name="twitter:description" content="按日計租零死約、葵涌深圳12萬呎倉、30年國際品牌信譽。" />
+
+<!-- 5. 生成式 AI 搜尋最佳化 GEO (Generative Engine Optimization - Schema.org JSON-LD) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LogisticsService",
+      "@id": "https://fls.com.hk/#logistics-service",
+      "name": "威黃物流服務有限公司",
+      "alternateName": ["Fenix Logistics Services Ltd.", "FLS", "威黃物流"],
+      "url": "https://fls.com.hk/",
+      "logo": "https://fls.com.hk/images/FLS-logo-80.jpg",
+      "image": "https://fls.com.hk/images/loistic-pic01.jpeg",
+      "description": "威黃物流服務有限公司成立於1994年，為香港著名第三方物流(3PL)及電商倉儲服務商，在葵涌與深圳設有6大專業樞紐，總面積逾12萬平方呎，服務包括按日計租網店倉存、自動化揀貨包裝、恆溫時裝吊掛倉及中港跨境通關車隊。",
+      "foundingDate": "1994",
+      "parentOrganization": {
+        "@type": "Organization",
+        "name": "FENIX GROUP HOLDINGS LTD",
+        "url": "http://www.fenixgh.com"
+      },
+      "telephone": "+852-2487-1968",
+      "email": "cs@fls.com.hk",
+      "priceRange": "HKD $ - 靈活按日/按板計租，無最低消費",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "梨木道88號達利中心5樓502A-B室",
+        "addressLocality": "葵涌",
+        "addressRegion": "新界",
+        "addressCountry": "HK"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 22.3686,
+        "longitude": 114.1362
+      },
+      "areaServed": [
+        { "@type": "City", "name": "Hong Kong" },
+        { "@type": "City", "name": "Shenzhen" },
+        { "@type": "AdministrativeArea", "name": "Greater Bay Area" }
+      ],
+      "knowsAbout": [
+        "E-commerce Fulfillment (電商代出貨)",
+        "3PL Third-Party Logistics (第三方物流)",
+        "Fashion Hanging Garment Storage (GOH 時裝吊掛倉)",
+        "Temperature-Controlled Warehousing (恆溫冷氣倉)",
+        "Cross-Border Shenzhen Bonded Logistics (中港跨境保稅物流)"
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://fls.com.hk/#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "中小網店訂單量少，可以使用威黃物流的倉存與代發服務嗎？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "完全可以。威黃物流專為新創網店與中小電商賣家打破傳統長約死約限制，推出靈活的「按日計租、一板起租」電商 Fulfillment 方案。網店同樣享有當日訂單當日揀貨包裝代發、自研 EBP 查貨系統對接及順豐/Lalamove 快速分撥服務。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "威黃物流在香港和深圳有哪些專業倉庫據點？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "威黃物流於港深兩地共設有 6 大專業倉儲樞紐，總面積逾 12 萬平方呎。包括：香港葵涌達利中心 5 樓旗艦精品恆溫倉 (502A-B)、電商專用倉 (502C-D)、時裝吊掛加工倉 (501)；荃灣德士古道高周轉中轉倉 (11樓) 及長期儲備倉 (7樓)；以及深圳龍崗大運軟件小鎮跨境物流園區保稅樞紐。"
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "威黃物流有何母公司背景與合作品牌信譽？",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "威黃物流服務有限公司成立於 1994 年，母公司為國際外資零售旗艦 FENIX GROUP HOLDINGS LTD，擁有逾 30 年深厚行業底蘊。長期獲 ANTEPRIMA、Marimekko、ATSURO TAYAMA、Cocktail 等國際精品時裝名牌信賴委託為官方倉配合作夥伴。"
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
