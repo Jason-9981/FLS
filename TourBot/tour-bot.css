@@ -1,6 +1,6 @@
 /* ==========================================================================
    FLS 專屬網頁導覽 AI 機械人 (Tour Guide Bot) - Apple Minimalist Aesthetic
-   版本：v0.1.1 (修復預設擺位、膠囊按鈕排版、頭像載入防溢出)
+   版本：v0.1.2 (3D 高清吉祥物專屬版，取消粗像素模式與多餘開關)
    ========================================================================== */
 
 :root {
@@ -35,6 +35,11 @@
 
 #fls-tour-bot-container * {
   box-sizing: border-box;
+}
+
+.fls-bot-launcher,
+.fls-bot-panel.active,
+.fls-bot-panel.active * {
   pointer-events: auto;
 }
 
@@ -86,15 +91,6 @@
   display: block;
 }
 
-/* 粗像素銳利化關鍵樣式 (Preserve Sharp Pixel Art Without Blur) */
-.fls-mode-pixel .fls-launcher-avatar img,
-.fls-mode-pixel .fls-bot-header-avatar img {
-  image-rendering: -webkit-crisp-edges !important;
-  image-rendering: -moz-crisp-edges !important;
-  image-rendering: pixelated !important;
-  image-rendering: crisp-edges !important;
-}
-
 .fls-launcher-text {
   display: flex;
   flex-direction: column;
@@ -130,6 +126,8 @@
 
 /* 展開的主面板 (Expanded Bot Dialog Box) */
 .fls-bot-panel {
+  display: none !important;
+  pointer-events: none !important;
   width: 380px;
   max-width: calc(100vw - 36px);
   height: 520px;
@@ -141,26 +139,25 @@
   border: 1.5px solid var(--bot-border);
   border-radius: var(--bot-radius-panel);
   box-shadow: var(--bot-shadow-panel);
-  display: flex;
   flex-direction: column;
   overflow: hidden;
   margin-bottom: 14px;
   opacity: 0;
   transform: translateY(24px) scale(0.95);
-  pointer-events: none;
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .fls-bot-panel.active {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
+  display: flex !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
 }
 
 /* 頂部標題列 (Header) */
 .fls-bot-header {
   padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.85);
   border-bottom: 1px solid var(--bot-border);
   display: flex;
   align-items: center;
@@ -235,50 +232,32 @@
   color: var(--bot-text-primary);
 }
 
-/* 雙模式切換控制列 (Avatar Mode Segmented Switcher) */
-.fls-mode-toolbar {
-  padding: 8px 16px;
-  background: rgba(245, 245, 247, 0.85);
+/* 當前導覽重點導航列 (Topic Toolbar) - 極簡高雅 */
+.fls-topic-toolbar {
+  padding: 9px 18px;
+  background: rgba(245, 245, 247, 0.88);
   border-bottom: 1px solid var(--bot-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.75rem;
+  gap: 8px;
 }
 
-.fls-segmented-control {
-  display: inline-flex;
-  background: rgba(0, 0, 0, 0.06);
-  padding: 2px;
-  border-radius: var(--bot-radius-pill);
-}
-
-.fls-seg-btn {
-  padding: 4px 10px;
+.fls-topic-label {
   font-size: 0.72rem;
   font-weight: 600;
-  border: none;
-  background: transparent;
-  border-radius: var(--bot-radius-pill);
-  cursor: pointer;
   color: var(--bot-text-secondary);
-  transition: all 0.2s ease;
-}
-
-.fls-seg-btn.active {
-  background: #ffffff;
-  color: var(--bot-accent);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  white-space: nowrap;
 }
 
 .fls-current-topic-pill {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--bot-accent);
   background: var(--bot-accent-soft);
-  padding: 3px 8px;
+  padding: 3px 10px;
   border-radius: var(--bot-radius-pill);
-  max-width: 170px;
+  max-width: 220px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -446,11 +425,52 @@
 /* 行動裝置最佳化 */
 @media (max-width: 480px) {
   #fls-tour-bot-container {
-    right: 16px;
-    bottom: 16px;
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   }
   .fls-bot-panel {
-    width: calc(100vw - 32px);
-    height: 480px;
+    width: calc(100vw - 28px);
+    max-width: calc(100vw - 28px);
+    height: min(480px, calc(100vh - 100px));
+    max-height: calc(100vh - 100px);
+    margin-bottom: 8px;
+    border-radius: 20px;
+  }
+  .fls-bot-header {
+    padding: 12px 14px;
+  }
+  .fls-bot-header-avatar {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+  }
+  .fls-bot-chat-body {
+    padding: 12px;
+    gap: 10px;
+  }
+  .fls-msg-bubble {
+    font-size: 0.84rem;
+    padding: 10px 14px;
+  }
+  .fls-bot-launcher {
+    padding: 6px 14px 6px 6px;
+    min-height: 50px;
+    max-width: calc(100vw - 28px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  }
+  .fls-launcher-avatar {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+  }
+  .fls-launcher-title {
+    font-size: 0.825rem;
+  }
+  .fls-launcher-sub {
+    font-size: 0.7rem;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

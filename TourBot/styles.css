@@ -2066,3 +2066,166 @@ textarea.form-control {
   color: rgba(0, 0, 0, 0.55);
   background: rgba(255, 255, 255, 0.65);
 }
+
+
+/* ==========================================================================
+   手機端導航列與頂部專用排版優化 (Mobile Header & Navigation Responsive Polish)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .site-header {
+    height: auto !important;
+  }
+  .nav-wrap {
+    height: 60px !important;
+    padding: 0 12px !important;
+  }
+  .brand {
+    gap: 8px !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+  }
+  .brand-logo {
+    height: 38px !important;
+    width: auto !important;
+    border-radius: 6px !important;
+    flex-shrink: 0 !important;
+  }
+  .brand-wordmark {
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+  .brand-name {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+  }
+  .brand-sub {
+    display: none !important; /* 手機端自動隱藏冗長英文次標題，防止排版折行擠壓 */
+  }
+  .header-tools {
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+  }
+  .header-tools .lang-switcher {
+    display: none !important; /* 手機頂欄隱藏語言切換，移至抽屜選單以騰出空間 */
+  }
+  .header-tools .btn-primary {
+    padding: 6px 12px !important;
+    font-size: 0.775rem !important;
+    height: 32px !important;
+    line-height: 20px !important;
+    border-radius: 16px !important;
+    white-space: nowrap !important;
+  }
+  .menu-toggle {
+    width: 36px !important;
+    height: 36px !important;
+    padding: 6px !important;
+  }
+  .mobile-lang-row {
+    display: flex !important;
+  }
+  /* 避免右側主題浮動面板遮擋手機點擊 */
+  .floating-theme-dock {
+    right: 4px !important;
+    padding: 6px 3px !important;
+    gap: 6px !important;
+    opacity: 0.8 !important;
+  }
+  .theme-swatch-btn {
+    width: 22px !important;
+    height: 22px !important;
+  }
+  .swatch-dot {
+    width: 14px !important;
+    height: 14px !important;
+  }
+}
+
+.mobile-lang-row {
+  display: none;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ==========================================================================
+   Mobile Responsive Enhancements (手機端排版防走位優化)
+   ========================================================================== */
+
+.home-services-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.warehouses-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .home-services-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-trust-badges {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+  .bento-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .bento-span-8, .bento-span-4 {
+    grid-column: span 1 !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .home-services-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .warehouses-contact-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0 16px;
+  }
+  .section {
+    padding: 60px 0;
+  }
+  .hero {
+    padding: 60px 0 40px 0;
+  }
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+  .hero-actions .btn {
+    width: 100%;
+    text-align: center;
+  }
+  .section-header h2 {
+    font-size: 1.85rem;
+  }
+}
