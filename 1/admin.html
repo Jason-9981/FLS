@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FLS 網站內容修改介面 (CMS Admin) | 威黃物流</title>
+  <meta name="robots" content="noindex, nofollow" />
+
+  <!-- Project Release Standards -->
+  <meta name="version" content="v0.1" />
+  <meta name="build-date" content="2026-09-28" />
+
+  <link rel="stylesheet" href="styles.css?v=0.1" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    body {
+      background-color: #f1f5f9;
+    }
+    .admin-wrap {
+      max-width: 1080px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    .admin-bar {
+      background: var(--white);
+      padding: 22px 30px;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    .admin-card {
+      background: var(--white);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      margin-bottom: 25px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+    .admin-card-header {
+      background: #f8fafc;
+      padding: 16px 25px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .admin-card-header h3 {
+      font-size: 1.15rem;
+      color: var(--primary);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .admin-card-body {
+      padding: 25px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    /* 登入視窗 */
+    .login-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 30, 51, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+    }
+    .login-box {
+      background: var(--white);
+      width: 100%;
+      max-width: 440px;
+      padding: 35px 30px;
+      border-radius: 10px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+      text-align: center;
+    }
+    .credential-callout {
+      background: #e0f2fe;
+      border: 1px solid #bae6fd;
+      color: #0369a1;
+      padding: 12px 14px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      margin-bottom: 20px;
+      text-align: left;
+      line-height: 1.6;
+    }
+    .toast-popup {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      background: #10b981;
+      color: white;
+      padding: 12px 22px;
+      border-radius: 6px;
+      box-shadow: var(--shadow-hover);
+      font-weight: 700;
+      display: none;
+      z-index: 10000;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 登入驗證視窗 (依據 Jason 要求，密碼直接顯示在版面提示框，並預設填妥) -->
+  <div class="login-overlay" id="login-overlay">
+    <div class="login-box">
+      <img src="images/flslogo.jpg" alt="FLS Logo" style="height: 44px; margin: 0 auto 15px auto;" />
+      <h3 style="color: var(--primary); margin-bottom: 6px;">FLS 官方網站內容修改介面</h3>
+      <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 18px;">管理員登入</p>
+
+      <!-- 登入憑據直接顯示在版面上 -->
+      <div class="credential-callout">
+        <i class="fas fa-key" style="margin-right: 5px;"></i><strong>預設管理員登入憑據：</strong><br />
+        帳號：<code>jason@fls.com.hk</code><br />
+        密碼：<code>Fenix159-</code>
+      </div>
+
+      <div id="login-error" style="display: none; color: #dc2626; font-size: 0.85rem; margin-bottom: 12px; background: #fee2e2; padding: 8px; border-radius: 4px;">
+        帳號或密碼不正確，請重試。
+      </div>
+
+      <div class="form-group" style="text-align: left;">
+        <label class="form-label">管理員電郵</label>
+        <input type="email" id="admin-user" class="form-input" value="jason@fls.com.hk" />
+      </div>
+      <div class="form-group" style="text-align: left;">
+        <label class="form-label">管理密碼</label>
+        <input type="password" id="admin-pass" class="form-input" value="Fenix159-" />
+      </div>
+
+      <button type="button" class="btn-orange" id="login-btn" style="width: 100%; margin-top: 10px; font-size: 1rem;">
+        <i class="fas fa-sign-in-alt"></i> 登入 CMS 後台
+      </button>
+    </div>
+  </div>
+
+  <!-- CMS 管理介面主體 -->
+  <div class="admin-wrap">
+    <div class="admin-bar">
+      <div>
+        <h2 style="color: var(--primary); font-size: 1.5rem; font-weight: 800;">
+          <i class="fas fa-sliders-h" style="color: var(--orange); margin-right: 8px;"></i>FLS 官方網站內容修改後台
+        </h2>
+        <p style="color: #64748b; font-size: 0.85rem;">直接修改網頁各項文字與設定，支援即時預覽與導出數據庫檔案。</p>
+      </div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="index.html" class="btn-primary" target="_blank"><i class="fas fa-external-link-alt"></i> 開啟主頁預覽</a>
+        <button type="button" class="btn-primary" id="export-btn" style="background: var(--accent);"><i class="fas fa-download"></i> 導出 site-data.js</button>
+        <button type="button" class="btn-orange" id="save-btn"><i class="fas fa-save"></i> 儲存並即時套用</button>
+        <button type="button" class="btn-primary" id="reset-btn" style="background: #94a3b8;"><i class="fas fa-undo"></i> 恢復預設值</button>
+      </div>
+    </div>
+
+    <!-- 1. 基本聯絡資料與系統設定 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h3><i class="fas fa-address-card"></i> 1. 基本聯絡資料與系統設定 (Site Info & Formspree)</h3>
+      </div>
+      <div class="admin-card-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">公司名稱</label>
+            <input type="text" id="cfg-name" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">聯絡電話</label>
+            <input type="text" id="cfg-phone" class="form-input" />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">官方電郵 (cs@fls.com.hk)</label>
+            <input type="email" id="cfg-email" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">服務時間</label>
+            <input type="text" id="cfg-hours" class="form-input" />
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Formspree 電郵接收 Endpoint</label>
+            <input type="text" id="cfg-formspree" class="form-input" value="https://formspree.io/f/mljezogk" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">網上查貨系統 (FLS-EBP) 網址</label>
+            <input type="text" id="cfg-ebp" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">總部地址</label>
+          <input type="text" id="cfg-headquarters" class="form-input" />
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 首頁三大核心宣傳口號與介紹 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h3><i class="fas fa-bullhorn"></i> 2. 首頁宣傳口號與介紹 (Slogans & About)</h3>
+      </div>
+      <div class="admin-card-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">頂部標籤口號</label>
+            <input type="text" id="cfg-sloganTop" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">口號一 (Slogan 1)</label>
+            <input type="text" id="cfg-slogan1" class="form-input" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">口號二 (Slogan 2)</label>
+            <input type="text" id="cfg-slogan2" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">口號三 (Slogan 3)</label>
+            <input type="text" id="cfg-slogan3" class="form-input" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">「集團經營專業首選」簡介原文</label>
+          <textarea id="cfg-aboutIntro" class="form-textarea"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 物流方案 6 大服務內容管理 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h3><i class="fas fa-boxes"></i> 3. 核心物流方案管理 (Services)</h3>
+      </div>
+      <div class="admin-card-body" id="services-editor"></div>
+    </div>
+
+    <!-- 4. 企業核心價值 -->
+    <div class="admin-card">
+      <div class="admin-card-header">
+        <h3><i class="fas fa-heart"></i> 4. 企業核心價值 (Core Values)</h3>
+      </div>
+      <div class="admin-card-body" id="values-editor"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast-popup"><i class="fas fa-check-circle"></i> 已成功儲存！主頁已即時套用最新設定。</div>
+
+  <!-- 邏輯腳本 -->
+  <script src="site-data.js?v=0.1"></script>
+  <script>
+    const loginOverlay = document.getElementById("login-overlay");
+    const loginBtn = document.getElementById("login-btn");
+    const adminUser = document.getElementById("admin-user");
+    const adminPass = document.getElementById("admin-pass");
+    const loginError = document.getElementById("login-error");
+
+    if (sessionStorage.getItem("fls_cms_authenticated") === "true") {
+      loginOverlay.style.display = "none";
+    }
+
+    loginBtn.addEventListener("click", () => {
+      const user = adminUser.value.trim();
+      const pass = adminPass.value.trim();
+
+      if ((user === "jason@fls.com.hk" || user === "admin@fls.com.hk") && (pass === "Fenix159-" || pass === "fls1994")) {
+        sessionStorage.setItem("fls_cms_authenticated", "true");
+        loginOverlay.style.display = "none";
+      } else {
+        loginError.style.display = "block";
+      }
+    });
+
+    let currentData = JSON.parse(JSON.stringify(window.FLS_DATA || window.FLS_DEFAULT_DATA));
+
+    function populateForm() {
+      const s = currentData.siteInfo;
+      document.getElementById("cfg-name").value = s.name || "";
+      document.getElementById("cfg-phone").value = s.phone || "";
+      document.getElementById("cfg-email").value = s.email || "";
+      document.getElementById("cfg-hours").value = s.hours || "";
+      document.getElementById("cfg-formspree").value = s.formspreeEndpoint || "https://formspree.io/f/mljezogk";
+      document.getElementById("cfg-ebp").value = s.ebpUrl || "";
+      document.getElementById("cfg-headquarters").value = s.headquarters || "";
+      document.getElementById("cfg-sloganTop").value = s.sloganTop || "";
+      document.getElementById("cfg-slogan1").value = s.slogan1 || "";
+      document.getElementById("cfg-slogan2").value = s.slogan2 || "";
+      document.getElementById("cfg-slogan3").value = s.slogan3 || "";
+      document.getElementById("cfg-aboutIntro").value = s.aboutIntro || "";
+
+      // 填充 6 大服務
+      const sBox = document.getElementById("services-editor");
+      sBox.innerHTML = currentData.services.map((srv, idx) => `
+        <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 18px; margin-bottom: 15px;">
+          <h4 style="color: var(--primary); margin-bottom: 10px;">服務 ${srv.code}：${srv.title}</h4>
+          <div class="form-group">
+            <label class="form-label">服務名稱</label>
+            <input type="text" class="form-input" id="srv-title-${idx}" value="${srv.title}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">服務詳細描述 (舊網站原文)</label>
+            <textarea class="form-textarea" id="srv-desc-${idx}">${srv.desc}</textarea>
+          </div>
+        </div>
+      `).join("");
+
+      // 填充核心價值
+      const vBox = document.getElementById("values-editor");
+      vBox.innerHTML = currentData.coreValues.map((val, idx) => `
+        <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; padding: 18px; margin-bottom: 15px;">
+          <div class="form-group">
+            <label class="form-label">價值名稱</label>
+            <input type="text" class="form-input" id="val-title-${idx}" value="${val.title}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">價值描述</label>
+            <input type="text" class="form-input" id="val-desc-${idx}" value="${val.desc}" />
+          </div>
+        </div>
+      `).join("");
+    }
+
+    populateForm();
+
+    // 儲存邏輯
+    document.getElementById("save-btn").addEventListener("click", () => {
+      const s = currentData.siteInfo;
+      s.name = document.getElementById("cfg-name").value;
+      s.phone = document.getElementById("cfg-phone").value;
+      s.email = document.getElementById("cfg-email").value;
+      s.hours = document.getElementById("cfg-hours").value;
+      s.formspreeEndpoint = document.getElementById("cfg-formspree").value;
+      s.ebpUrl = document.getElementById("cfg-ebp").value;
+      s.headquarters = document.getElementById("cfg-headquarters").value;
+      s.sloganTop = document.getElementById("cfg-sloganTop").value;
+      s.slogan1 = document.getElementById("cfg-slogan1").value;
+      s.slogan2 = document.getElementById("cfg-slogan2").value;
+      s.slogan3 = document.getElementById("cfg-slogan3").value;
+      s.aboutIntro = document.getElementById("cfg-aboutIntro").value;
+
+      currentData.services.forEach((srv, idx) => {
+        srv.title = document.getElementById(`srv-title-${idx}`).value;
+        srv.desc = document.getElementById(`srv-desc-${idx}`).value;
+      });
+
+      currentData.coreValues.forEach((val, idx) => {
+        val.title = document.getElementById(`val-title-${idx}`).value;
+        val.desc = document.getElementById(`val-desc-${idx}`).value;
+      });
+
+      localStorage.setItem("fls_cms_data", JSON.stringify(currentData));
+
+      const toast = document.getElementById("toast");
+      toast.style.display = "block";
+      setTimeout(() => { toast.style.display = "none"; }, 3000);
+    });
+
+    // 導出 site-data.js
+    document.getElementById("export-btn").addEventListener("click", () => {
+      const exportContent = `/**
+ * FLS 威黃物流服務有限公司 (fls.com.hk) - 官方原始核心數據庫 (Central Data Store)
+ * 導出時間: ${new Date().toISOString()}
+ * Version: v0.1
+ */
+window.FLS_DEFAULT_DATA = ${JSON.stringify(currentData, null, 2)};
+
+function getActiveFLSData() {
+  try {
+    const saved = localStorage.getItem("fls_cms_data");
+    if (saved) {
+      return Object.assign({}, window.FLS_DEFAULT_DATA, JSON.parse(saved));
+    }
+  } catch (e) {}
+  return window.FLS_DEFAULT_DATA;
+}
+
+window.FLS_DATA = getActiveFLSData();
+`;
+      const blob = new Blob([exportContent], { type: "text/javascript;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "site-data.js";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    // 恢復預設值
+    document.getElementById("reset-btn").addEventListener("click", () => {
+      if (confirm("確定要清除所有自訂修改，恢復為 100% 舊網站初始預設值嗎？")) {
+        localStorage.removeItem("fls_cms_data");
+        currentData = JSON.parse(JSON.stringify(window.FLS_DEFAULT_DATA));
+        populateForm();
+        alert("已成功恢復初始預設資料！");
+      }
+    });
+  </script>
+</body>
+</html>
