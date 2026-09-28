@@ -260,10 +260,29 @@
     return cachedVoices.find(voice => voice.lang.startsWith(prefix)) || null;
   }
 
+  // 全域語音隊列與心跳保活計時器 (解決 Chrome/Safari 14-15 秒逾時中斷與垃圾回收 GC Bug)
+  let activeUtterances = [];
+  let speechKeepAliveTimer = null;
+
+  function clearSpeechKeepAlive() {
+    if (speechKeepAliveTimer) {
+      clearInterval(speechKeepAliveTimer);
+      speechKeepAliveTimer = null;
+    }
+  }
+
+  function stopSpeech() {
+    clearSpeechKeepAlive();
+    activeUtterances = [];
+    if ('speechSynthesis' in window) {
+      stopSpeech();
+    }
+  }
+
   function speakText(text) {
     if (!isSpeechEnabled || !('speechSynthesis' in window)) return;
     try {
-      window.speechSynthesis.cancel();
+      stopSpeech();
       window.speechSynthesis.resume();
 
       const cleanText = text
@@ -275,19 +294,54 @@
 
       if (!cleanText) return;
 
-      const utter = new SpeechSynthesisUtterance(cleanText);
-      utter.lang = utterLang;
-      utter.rate = 1.0;
-      utter.pitch = 1.0;
+      // 句子切分 (按句號、感嘆號、問號、分號或換行切割，確保每段在 10 秒內，語調更自然流暢)
+      const rawParts = cleanText.split(/([。！？!?；;\n]+)/);
+      const sentences = [];
+      for (let i = 0; i < rawParts.length; i += 2) {
+        const seg = (rawParts[i] || '').trim();
+        const punct = (rawParts[i + 1] || '').trim();
+        if (seg) {
+          sentences.push(seg + (punct ? punct : '。'));
+        }
+      }
 
+      const chunks = sentences.length > 0 ? sentences : [cleanText];
       const voice = getBestVoice(utterLang);
-      if (voice) utter.voice = voice;
 
-      utter.onerror = (e) => {
-        console.warn('[TourBot] 語音朗讀提示:', e);
-      };
+      chunks.forEach((chunk, index) => {
+        const utter = new SpeechSynthesisUtterance(chunk);
+        utter.lang = utterLang;
+        utter.rate = 1.0;
+        utter.pitch = 1.0;
+        if (voice) utter.voice = voice;
 
-      window.speechSynthesis.speak(utter);
+        utter.onerror = (e) => {
+          console.warn('[TourBot] 語音朗讀提示:', e);
+        };
+
+        if (index === chunks.length - 1) {
+          utter.onend = () => {
+            clearSpeechKeepAlive();
+            activeUtterances = [];
+          };
+        }
+
+        activeUtterances.push(utter); // 保持引用，防止 V8/WebKit Garbage Collector 中途回收
+        window.speechSynthesis.speak(utter);
+      });
+
+      // 啟動 Chrome 15 秒心跳保活機制
+      clearSpeechKeepAlive();
+      speechKeepAliveTimer = setInterval(() => {
+        if (!window.speechSynthesis.speaking) {
+          clearSpeechKeepAlive();
+          activeUtterances = [];
+        } else {
+          window.speechSynthesis.pause();
+          window.speechSynthesis.resume();
+        }
+      }, 7000);
+
     } catch (e) {
       console.warn('[TourBot] 語音朗讀未就緒:', e);
     }
@@ -400,7 +454,7 @@
         panel.classList.remove('active');
         launcher.style.display = 'flex';
         if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
+          stopSpeech();
         }
       }
     }
@@ -631,7 +685,7 @@
           const data = TOUR_KNOWLEDGE[activeTourKey];
           speakText(typeof data.getDirectText === 'function' ? data.getDirectText() : data.text);
         } else if (!isSpeechEnabled && 'speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
+          stopSpeech();
         }
       });
     }
