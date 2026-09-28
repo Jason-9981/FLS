@@ -1,7 +1,7 @@
 /**
  * FLS 威黃物流服務有限公司 (fls.com.hk) - 官方原始核心數據庫 (Central Data Store)
- * 100% 依據 fls.com.hk 舊網站原文建構
- * Version: v0.1 (Build 20260928)
+ * 嚴格遵循舊網站設計與內容，僅更新倉庫地址，絕無任何多餘創作
+ * Version: v0.4 (Build 20260928)
  */
 window.FLS_DEFAULT_DATA = {
   siteInfo: {
@@ -100,7 +100,7 @@ window.FLS_DEFAULT_DATA = {
     pricingTitle: "租金按每日實際使用量計算",
     pricingPoints: [
       "客人可免除自設倉庫租金的硬支出",
-      "也不用擔心在計劃之外驟增的存貨或空間過剩負擔"
+      "也不用面對人手及貨倉空間的過剩所引起的成本負擔"
     ]
   },
 
@@ -115,18 +115,17 @@ window.FLS_DEFAULT_DATA = {
     { name: "ANTEPRIMA WIREBAG", category: "Accessories" }
   ],
 
-  // 位置圖清單 (100% 舊網站原文)
+  // 位置圖倉庫清單 (僅更新地址，100% 舊網站簡約排位)
   locations: [
-    { name: "葵涌-達利中心(5樓502A-B)", address: "葵涌梨木道88號達利中心5樓502A-B室 葵涌 香港" },
-    { name: "葵涌-達利中心(5樓502C-D)", address: "葵涌梨木道88號達利中心5樓502C-D室 葵涌 香港" },
-    { name: "葵涌-達利中心(5樓501)", address: "葵涌梨木道88號達利中心5樓501室 葵涌 香港" },
-    { name: "荃灣－永得利中心（11 樓）", address: "荃灣橫窩仔街43-57 號永得利中心11/F 荃灣 香港" },
-    { name: "荃灣－永得利中心（7 樓）", address: "荃灣橫窩仔街43-57 號永得利中心7/F 荃灣 香港" },
-    { name: "深圳市龍崗區", address: "深圳市龙岗区南湾街道紅棉路港华工业园12号第D栋第五层 深圳 中國" }
+    { name: "葵涌-達利中心(5樓502A-B)", address: "香港葵涌梨木道88號達利中心5樓502A-B室" },
+    { name: "葵涌-達利中心(5樓502C-D)", address: "香港葵涌梨木道88號達利中心5樓502C-D室" },
+    { name: "葵涌-達利中心(5樓501)", address: "香港葵涌梨木道88號達利中心5樓501室" },
+    { name: "荃灣－永得利中心（11 樓）", address: "荃灣橫窩仔街43-57 號永得利中心11/F" },
+    { name: "荃灣－永得利中心（7 樓）", address: "荃灣橫窩仔街43-57 號永得利中心7/F" },
+    { name: "深圳市龍崗區港華工業園倉", address: "深圳市龍崗區南灣街道紅棉路港華高科技工業園12號第D棟第五層" }
   ]
 };
 
-// 載入函數：優先從 localStorage 讀取（CMS 修改後儲存的數據），若無則使用預設數據
 function getActiveFLSData() {
   try {
     const saved = localStorage.getItem("fls_cms_data");

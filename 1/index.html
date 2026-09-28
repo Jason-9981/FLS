@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <!-- SEO & Standard Meta Tags (100% 依據 fls.com.hk 舊網站原文) -->
+  <!-- SEO & Standard Meta Tags -->
   <title>主頁 - FLS 威黃物流服務有限公司</title>
   <meta name="description" content="三黃香港集團因應國際品牌的業務發展，率先引入日本先進的第三方物流經營概念及管理技術，並於1994年成立威黃物流服務有限公司，為集團開創了彈性營運成本的結構優勢。" />
   <meta name="keywords" content="威黃物流, FLS, Fenix Logistics Services Ltd, 倉存服務, 增值服務, 運輸服務, 電腦支援服務, 船務支援, 網店倉庫服務, 網上查貨系統" />
@@ -25,11 +25,11 @@
   <meta property="og:image" content="images/flslogo.jpg" />
 
   <!-- Project Release Standards -->
-  <meta name="version" content="v0.1" />
+  <meta name="version" content="v0.4" />
   <meta name="build-date" content="2026-09-28" />
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="styles.css?v=0.1" />
+  <link rel="stylesheet" href="styles.css?v=0.4" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
   <!-- JSON-LD 結構化資料 -->
@@ -61,7 +61,7 @@
 </head>
 <body>
 
-  <!-- 頂部聯絡列 (Top Bar) -->
+  <!-- 頂部聯絡列 (Top Bar - 100% 舊網站) -->
   <div class="top-bar">
     <div class="container top-bar-inner">
       <div class="top-bar-left">
@@ -94,7 +94,7 @@
     </div>
   </div>
 
-  <!-- 主導航欄 (Main Header & Navbar) -->
+  <!-- 主導航欄 (Main Header & Navbar - 100% 舊網站排位) -->
   <header class="site-header">
     <div class="container nav-wrap">
       <!-- 官方最原裝 Logo (flslogo.jpg) -->
@@ -102,13 +102,14 @@
         <img src="images/flslogo.jpg" alt="FLS 威黃物流服務有限公司" class="brand-logo" />
       </a>
 
-      <!-- 簡潔優雅的主選單 (保持一行不折行，移除CMS字眼) -->
+      <!-- 舊網站原版選單 (一行平整不折行) -->
       <nav class="main-nav" id="main-nav" aria-label="主要導覽">
         <a href="#home" class="nav-link active">主頁</a>
         <a href="#about" class="nav-link">關於我們</a>
         <a href="#services" class="nav-link">物流方案</a>
         <a href="#ecommerce" class="nav-link">網店倉庫服務</a>
         <a href="#support" class="nav-link">客戶支援</a>
+        <a href="#location" class="nav-link">位置圖</a>
         <a href="#contact" class="nav-link">聯絡我們</a>
       </nav>
 
@@ -251,19 +252,19 @@
     </div>
   </section>
 
-  <!-- 6. 位置圖 (Location Map - 100% 舊網站資料與 view-location.png) -->
+  <!-- 6. 位置圖 (Location Map - 舊網站原版版塊，僅更新各倉地址) -->
   <section class="section section-alt" id="location">
     <div class="container">
       <div class="section-header">
         <span class="section-tag">LOCATION MAP</span>
         <h2 class="section-title">位置圖</h2>
-        <p class="section-desc">查看位置圖與倉庫樞紐分佈</p>
+        <p class="section-desc">查看位置圖</p>
       </div>
 
-      <div class="locations-grid" id="locations-grid-container">
-        <!-- 由 main.js 動態渲染 6 大地址清單 -->
-      </div>
+      <!-- 由 main.js 動態渲染 6 大倉庫地址清單 (僅更新地址) -->
+      <div class="locations-grid" id="locations-grid-container"></div>
 
+      <!-- 位置圖圖片展示 -->
       <div style="border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); max-width: 880px; margin: 0 auto;">
         <img src="images/view-location.png" alt="威黃物流位置圖" style="width: 100%; height: auto; object-fit: cover;" />
       </div>
@@ -353,6 +354,20 @@
     </div>
   </section>
 
+  <!-- 成功/失敗顯著居中彈出提示對話框 (Explicit Modal Dialog) -->
+  <div class="modal-overlay" id="feedback-modal">
+    <div class="modal-dialog">
+      <div class="modal-icon-circle" id="modal-icon">
+        <i class="fas fa-check"></i>
+      </div>
+      <h3 class="modal-title" id="modal-title">查詢傳送成功！</h3>
+      <p class="modal-desc" id="modal-desc">
+        感謝閣下的聯絡，威黃物流已成功收到您的需求。專屬物流主任將於 24 小時內與您聯絡！
+      </p>
+      <button type="button" class="modal-btn" id="modal-close-btn">確定 (OK)</button>
+    </div>
+  </div>
+
   <!-- 頁尾 (Footer - 100% 舊網站版權) -->
   <footer class="site-footer">
     <div class="container">
@@ -365,13 +380,13 @@
       </div>
       <div class="footer-copy">
         © Copyright 2017 - 2026 Fenix Logistics Services Ltd. All Rights Reserved.<br />
-        <span style="font-size: 0.75rem; color: #64748b; margin-top: 6px; display: inline-block;">Version: v0.1 (Build 20260928)</span>
+        <span style="font-size: 0.75rem; color: #64748b; margin-top: 6px; display: inline-block;">Version: v0.4 (Build 20260928)</span>
       </div>
     </div>
   </footer>
 
   <!-- 核心腳本 -->
-  <script src="site-data.js?v=0.1"></script>
-  <script src="main.js?v=0.1"></script>
+  <script src="site-data.js?v=0.4"></script>
+  <script src="main.js?v=0.4"></script>
 </body>
 </html>
