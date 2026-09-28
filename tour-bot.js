@@ -218,64 +218,16 @@
     imgEl.src = AVATAR_CONFIG.src;
   }
 
-  // 語音朗讀合成器
-  let cachedVoices = [];
-  function loadVoices() {
-    if ('speechSynthesis' in window) {
-      cachedVoices = window.speechSynthesis.getVoices() || [];
-    }
-  }
-  if ('speechSynthesis' in window) {
-    loadVoices();
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-  }
-
-  function getBestVoice(targetLang) {
-    const lang = targetLang || utterLang || 'zh-HK';
-    if (!cachedVoices.length) loadVoices();
-    if (!cachedVoices.length) return null;
-
-    // 1. 精確比對語言代碼 (如 zh-HK)
-    let v = cachedVoices.find(voice => voice.lang === lang || voice.lang.replace('_', '-') === lang);
-    if (v) return v;
-
-    // 2. 廣東話關鍵字 (zh-HK / yue / 粵語 / 香港)
-    if (lang.startsWith('zh')) {
-      v = cachedVoices.find(voice => 
-        voice.lang.includes('HK') || 
-        voice.lang.includes('yue') || 
-        voice.name.toLowerCase().includes('cantonese') || 
-        voice.name.includes('香港') || 
-        voice.name.includes('粵語')
-      );
-      if (v) return v;
-
-      // 3. 次選繁體中文 (zh-TW)
-      v = cachedVoices.find(voice => voice.lang.includes('TW') || voice.lang.startsWith('zh'));
-      if (v) return v;
-    }
-
-    // 4. 前綴比對
-    const prefix = lang.split('-')[0];
-    return cachedVoices.find(voice => voice.lang.startsWith(prefix)) || null;
-  }
-
-  // 全域活動語音強引用與心跳保活 (解決瀏覽器垃圾回收 GC 及 15 秒底層靜默逾時 Bug)
-  let currentActiveUtterance = null;
+  // 語音朗讀管理：防止 GC 垃圾回收與防非同步 cancel 衝突
+  window._flsActiveUtterance = null;
   let speechKeepAliveTimer = null;
 
-  function clearSpeechKeepAlive() {
+  function stopSpeech() {
     if (speechKeepAliveTimer) {
       clearInterval(speechKeepAliveTimer);
       speechKeepAliveTimer = null;
     }
-  }
-
-  function stopSpeech() {
-    clearSpeechKeepAlive();
-    currentActiveUtterance = null;
+    window._flsActiveUtterance = null;
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
@@ -285,7 +237,6 @@
     if (!isSpeechEnabled || !('speechSynthesis' in window)) return;
     try {
       stopSpeech();
-      window.speechSynthesis.resume();
 
       const cleanText = text
         .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
@@ -297,40 +248,42 @@
       if (!cleanText) return;
 
       const utter = new SpeechSynthesisUtterance(cleanText);
-      const lang = utterLang || 'zh-HK';
-      utter.lang = lang;
+      utter.lang = utterLang || 'zh-HK';
       utter.rate = 1.0;
       utter.pitch = 1.0;
 
-      const voice = getBestVoice(lang);
-      if (voice) utter.voice = voice;
-
-      currentActiveUtterance = utter; // 保持全域強引用，防止 V8 垃圾回收中途消音
+      // 保持全域強引用，防止 Chromium V8 / WebKit 在 14 秒時垃圾回收 (GC) 導致中途靜音
+      window._flsActiveUtterance = utter;
 
       utter.onend = () => {
-        clearSpeechKeepAlive();
-        currentActiveUtterance = null;
+        stopSpeech();
       };
-
       utter.onerror = (e) => {
-        console.warn('[TourBot] 語音朗讀提示:', e);
-        clearSpeechKeepAlive();
-        currentActiveUtterance = null;
+        console.warn('[TourBot] 語音提示:', e);
+        stopSpeech();
       };
 
-      // Chrome 15 秒心跳保活 (每 8 秒 pause + resume 確保長文本讀完全文)
-      clearSpeechKeepAlive();
-      speechKeepAliveTimer = setInterval(() => {
-        if (!window.speechSynthesis.speaking) {
-          clearSpeechKeepAlive();
-          currentActiveUtterance = null;
-        } else {
-          window.speechSynthesis.pause();
+      // 延遲 60ms 執行 speak()，避開 cancel() 的非同步線程衝突
+      setTimeout(() => {
+        try {
           window.speechSynthesis.resume();
-        }
-      }, 8000);
+          window.speechSynthesis.speak(utter);
 
-      window.speechSynthesis.speak(utter);
+          // Chrome 15 秒保活心跳 (每 8 秒 pause + resume 確保長文本讀完全文)
+          if (speechKeepAliveTimer) clearInterval(speechKeepAliveTimer);
+          speechKeepAliveTimer = setInterval(() => {
+            if (!window.speechSynthesis.speaking) {
+              stopSpeech();
+            } else {
+              window.speechSynthesis.pause();
+              window.speechSynthesis.resume();
+            }
+          }, 8000);
+        } catch (err) {
+          console.warn('[TourBot] 播放失敗:', err);
+        }
+      }, 60);
+
     } catch (e) {
       console.warn('[TourBot] 語音朗讀未就緒:', e);
     }
