@@ -203,6 +203,7 @@
   // 語音朗讀開關：預設開啟（true），但受瀏覽器 Autoplay 規範保護，訪客點擊打開機械人時觸發播放
   const storedSpeech = localStorage.getItem('fls_bot_speech');
   let isSpeechEnabled = storedSpeech !== null ? storedSpeech === 'true' : true;
+  let utterLang = 'zh-HK';
   let activeTourKey = null;
   let typingInterval = null;
 
@@ -232,15 +233,16 @@
   }
 
   function getBestVoice(targetLang) {
+    const lang = targetLang || utterLang || 'zh-HK';
     if (!cachedVoices.length) loadVoices();
     if (!cachedVoices.length) return null;
 
     // 1. 精確比對語言代碼 (如 zh-HK)
-    let v = cachedVoices.find(voice => voice.lang === targetLang || voice.lang.replace('_', '-') === targetLang);
+    let v = cachedVoices.find(voice => voice.lang === lang || voice.lang.replace('_', '-') === lang);
     if (v) return v;
 
     // 2. 廣東話關鍵字 (zh-HK / yue / 粵語 / 香港)
-    if (targetLang.startsWith('zh')) {
+    if (lang.startsWith('zh')) {
       v = cachedVoices.find(voice => 
         voice.lang.includes('HK') || 
         voice.lang.includes('yue') || 
@@ -256,12 +258,12 @@
     }
 
     // 4. 前綴比對
-    const prefix = targetLang.split('-')[0];
+    const prefix = lang.split('-')[0];
     return cachedVoices.find(voice => voice.lang.startsWith(prefix)) || null;
   }
 
-  // 全域語音隊列與心跳保活計時器 (解決 Chrome/Safari 14-15 秒逾時中斷與垃圾回收 GC Bug)
-  let activeUtterances = [];
+  // 全域活動語音強引用與心跳保活 (解決瀏覽器垃圾回收 GC 及 15 秒底層靜默逾時 Bug)
+  let currentActiveUtterance = null;
   let speechKeepAliveTimer = null;
 
   function clearSpeechKeepAlive() {
@@ -273,9 +275,9 @@
 
   function stopSpeech() {
     clearSpeechKeepAlive();
-    activeUtterances = [];
+    currentActiveUtterance = null;
     if ('speechSynthesis' in window) {
-      stopSpeech();
+      window.speechSynthesis.cancel();
     }
   }
 
@@ -294,54 +296,41 @@
 
       if (!cleanText) return;
 
-      // 句子切分 (按句號、感嘆號、問號、分號或換行切割，確保每段在 10 秒內，語調更自然流暢)
-      const rawParts = cleanText.split(/([。！？!?；;\n]+)/);
-      const sentences = [];
-      for (let i = 0; i < rawParts.length; i += 2) {
-        const seg = (rawParts[i] || '').trim();
-        const punct = (rawParts[i + 1] || '').trim();
-        if (seg) {
-          sentences.push(seg + (punct ? punct : '。'));
-        }
-      }
+      const utter = new SpeechSynthesisUtterance(cleanText);
+      const lang = utterLang || 'zh-HK';
+      utter.lang = lang;
+      utter.rate = 1.0;
+      utter.pitch = 1.0;
 
-      const chunks = sentences.length > 0 ? sentences : [cleanText];
-      const voice = getBestVoice(utterLang);
+      const voice = getBestVoice(lang);
+      if (voice) utter.voice = voice;
 
-      chunks.forEach((chunk, index) => {
-        const utter = new SpeechSynthesisUtterance(chunk);
-        utter.lang = utterLang;
-        utter.rate = 1.0;
-        utter.pitch = 1.0;
-        if (voice) utter.voice = voice;
+      currentActiveUtterance = utter; // 保持全域強引用，防止 V8 垃圾回收中途消音
 
-        utter.onerror = (e) => {
-          console.warn('[TourBot] 語音朗讀提示:', e);
-        };
+      utter.onend = () => {
+        clearSpeechKeepAlive();
+        currentActiveUtterance = null;
+      };
 
-        if (index === chunks.length - 1) {
-          utter.onend = () => {
-            clearSpeechKeepAlive();
-            activeUtterances = [];
-          };
-        }
+      utter.onerror = (e) => {
+        console.warn('[TourBot] 語音朗讀提示:', e);
+        clearSpeechKeepAlive();
+        currentActiveUtterance = null;
+      };
 
-        activeUtterances.push(utter); // 保持引用，防止 V8/WebKit Garbage Collector 中途回收
-        window.speechSynthesis.speak(utter);
-      });
-
-      // 啟動 Chrome 15 秒心跳保活機制
+      // Chrome 15 秒心跳保活 (每 8 秒 pause + resume 確保長文本讀完全文)
       clearSpeechKeepAlive();
       speechKeepAliveTimer = setInterval(() => {
         if (!window.speechSynthesis.speaking) {
           clearSpeechKeepAlive();
-          activeUtterances = [];
+          currentActiveUtterance = null;
         } else {
           window.speechSynthesis.pause();
           window.speechSynthesis.resume();
         }
-      }, 7000);
+      }, 8000);
 
+      window.speechSynthesis.speak(utter);
     } catch (e) {
       console.warn('[TourBot] 語音朗讀未就緒:', e);
     }
@@ -710,7 +699,6 @@
   // ==========================================================================
   // 多語言切換適配監聽 (Tour Bot Multilingual Support)
   // ==========================================================================
-  let utterLang = 'zh-HK';
   window.addEventListener('fls:languagechange', function (e) {
     const lang = (e.detail && e.detail.lang) || 'zh-Hant';
     
