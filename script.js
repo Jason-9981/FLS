@@ -765,6 +765,12 @@ function initApp() {
   const CANTONESE_PHRASES = [["你好！我係導覽員小威", "你好！我是导览员小威"], ["身邊呢位戴眼鏡嘅係小黃", "身边这位戴眼镜的是小黄"], ["歡迎參觀威黃物流（FLS）！", "欢迎参观威黄物流（FLS）！"], ["向下滾動我會為你解密每個位置嘅物流內幕！", "向下滚动我会为你解密每个位置的物流内幕！"], ["早在 1994 年就已經係", "早在 1994 年就已经是"], ["嘅專屬物流心臟", "的专属物流心脏"], ["當年全港第一批", "当年全港第一批"], ["嘅恆溫吊掛時裝倉", "的恒温吊挂时装仓"], ["就係由我哋達利中心工程團隊一手打造！", "就是由我们达利中心工程团队一手打造！"], ["行到最底喇！", "走到最底啦！"], ["搵我們的物流專員", "联系我们的物流专员"], ["隨時為你提供支援", "随时为你提供支持"], ["用幾多算幾多", "用多少算多少"], ["免去奔波迷你倉煩惱", "免去奔波迷你仓烦恼"], ["點擊即時解密", "点击即时解密"], ["專屬導覽員小威", "专属导览员小威"], ["重講當前頁段", "重讲当前页段"], ["試算報價", "试算报价"], ["我係", "我是"], ["呢位", "这位"], ["嘅係", "的是"], ["我哋", "我们"], ["咗", "了"], ["喺", "在"], ["嘅", "的"], ["哋", "们"], ["搵", "找"], ["咁", "这么"], ["點樣", "怎样"], ["邊度", "哪里"], ["幾多", "多少"], ["好抵", "划算"], ["係", "是"], ["唔", "不"]];
   // 完整全站中英翻譯詞庫 (涵蓋所有頁面、表單、按鈕、提示與多倉規格)
   const EN_PHRASES = {
+  "網店倉存點揀好？自租工廈 vs 第三方 Fulfilment 成本效益全剖析": "How to Choose eCommerce Storage: Self-Leased Industrial Space vs. 3PL Fulfillment Cost-Benefit Analysis",
+  "許多中小網店老闆面臨業務成長時，常猶豫要不要自己租工廈請兼職。本文拆解水電、死約租金、包材與人手隱形成本，幫你精打細算。": "When scaling up, many eCommerce founders debate between self-leasing an industrial unit and outsourcing to 3PL. We break down hidden costs of utilities, locked-in leases, packaging, and labor to maximize your ROI.",
+  "電商大促揀貨避坑指南：如何做到 99.9% 出貨準確率？": "Peak Season Fulfillment Playbook: How to Achieve 99.9% Order Dispatch Accuracy",
+  "雙 11、SOGO 感謝祭或聖誕大促銷期間，爆單是好事，但發錯貨退貨卻能吃掉所有利潤。看 30 年物流老兵如何用條碼流與防呆機制守護信譽。": "Order surges during Double 11, SOGO Thankful Week, or Christmas are great, but fulfillment errors and returns can erode profits. Discover how 30-year logistics veterans safeguard reputations with barcode workflows and double-check mechanisms.",
+  "香港精品零售供應鏈升級：B2B 門市補貨與 B2C 網購合流新常態": "Hong Kong Luxury Retail Supply Chain: The New Era of Integrated B2B Store Restocking and B2C eCommerce",
+  "線下高端實體專櫃與線上官方網店不再各自為政。一套庫存全渠道打通（Omnichannel），如何幫助時尚國際名牌減少 30% 庫存積壓？": "Offline flagship boutiques and online direct-to-consumer stores are no longer siloed. Learn how unified omnichannel inventory tracking helps global luxury fashion brands reduce stock overages by up to 30%.",
   "總部與核心旗艦倉": "Headquarters & Flagship Hub",
   "營運中": "Operational",
   "總部綜合行政與營運指揮中心": "Headquarters administration, operations command center, and secure data room",
@@ -1439,33 +1445,66 @@ function initApp() {
     `).join("");
   }
 
-  // I. 動態渲染網誌文章 (Blog on blog.html)
+  // I. 動態渲染網誌文章 (Blog on blog.html - 支援 100% 繁/簡/英即時切換)
   const blogGrid = document.getElementById("blog-dynamic-grid");
   if (blogGrid && window.FLS_DATA && window.FLS_DATA.blogPosts) {
+    let currentBlogFilter = "all";
     function renderBlog(filter = "all") {
-      const posts = window.FLS_DATA.blogPosts.filter(p => filter === "all" || p.category === filter);
-      blogGrid.innerHTML = posts.map(post => `
+      currentBlogFilter = filter;
+      const currentLang = (typeof safeStorage !== 'undefined' && safeStorage.getItem("fls_site_lang")) || document.documentElement.getAttribute("lang") || "zh-Hant";
+      
+      const posts = window.FLS_DATA.blogPosts.filter(p => {
+        if (filter === "all") return true;
+        return p.category === filter || p.category_en === filter || p.category_hans === filter;
+      });
+
+      blogGrid.innerHTML = posts.map(post => {
+        let title = post.title;
+        let summary = post.summary;
+        let category = post.category;
+        let readTime = post.readTime;
+        let linkText = '閱讀深入分析及諮詢 →';
+        let querySubject = '查詢網誌內容：' + title;
+
+        if (currentLang === 'en') {
+          title = post.title_en || title;
+          summary = post.summary_en || summary;
+          category = post.category_en || category;
+          readTime = post.readTime_en || readTime;
+          linkText = 'Read Insights & Consult →';
+          querySubject = 'Inquiry on Article: ' + title;
+        } else if (currentLang === 'zh-Hans') {
+          title = post.title_hans || title;
+          summary = post.summary_hans || summary;
+          category = post.category_hans || category;
+          readTime = post.readTime_hans || readTime;
+          linkText = '阅读深入分析及咨询 →';
+          querySubject = '查询网志内容：' + title;
+        }
+
+        return `
         <article class="article-card" data-category="${post.category}" style="padding-top:24px;">
           <div class="article-body">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-              <span class="badge badge-orange" style="font-size:0.75rem;">${post.category}</span>
+              <span class="badge badge-orange" style="font-size:0.75rem;">${category}</span>
               <div class="article-meta" style="margin:0; font-size:0.8rem;">
                 <span>📅 ${post.date}</span>
-                <span>⏱ ${post.readTime}</span>
+                <span>⏱ ${readTime}</span>
               </div>
             </div>
             <div class="article-meta">
               <span>📅 ${post.date}</span>
-              <span>⏱ ${post.readTime}</span>
+              <span>⏱ ${readTime}</span>
             </div>
-            <h3 class="article-title">${post.title}</h3>
-            <p class="article-snippet">${post.summary}</p>
-            <a href="contact.html?subject=查詢網誌內容：${encodeURIComponent(post.title)}" class="article-link">
-              閱讀深入分析及諮詢 →
+            <h3 class="article-title">${title}</h3>
+            <p class="article-snippet">${summary}</p>
+            <a href="contact.html?subject=${encodeURIComponent(querySubject)}" class="article-link">
+              ${linkText}
             </a>
           </div>
         </article>
-      `).join("");
+      `;
+      }).join("");
     }
 
     renderBlog("all");
@@ -1476,6 +1515,11 @@ function initApp() {
         btn.classList.add("active");
         renderBlog(btn.dataset.category);
       });
+    });
+
+    // 監聽語言切換廣播，即時重新渲染對應語言網誌內容
+    window.addEventListener("fls:languagechange", () => {
+      renderBlog(currentBlogFilter);
     });
   }
 
