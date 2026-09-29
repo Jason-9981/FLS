@@ -1,6 +1,6 @@
 /**
  * 威黃物流服務有限公司 (FLS) - 專屬網頁導覽 AI 機械人 (Tour Guide Bot)
- * 版本編號: v0.1 (Build 2026-09-26)
+ * 版本編號: v0.1 (Build 2026-09-29 - 廣東話專用修復版)
  * 設計風格: 蘋果極簡主義 (Apple Minimalist Aesthetic)
  * 核心功能:
  * 1. 滾動感知導覽 (IntersectionObserver)：根據訪客當前視角自動切換解密主題。
@@ -203,6 +203,7 @@
   // 語音朗讀開關：預設開啟（true），但受瀏覽器 Autoplay 規範保護，訪客點擊打開機械人時觸發播放
   const storedSpeech = localStorage.getItem('fls_bot_speech');
   let isSpeechEnabled = storedSpeech !== null ? storedSpeech === 'true' : true;
+  let utterLang = 'zh-HK';
   let activeTourKey = null;
   let typingInterval = null;
 
@@ -217,7 +218,11 @@
     imgEl.src = AVATAR_CONFIG.src;
   }
 
-  // 語音朗讀合成器
+  // 語音朗讀管理：防止 GC 垃圾回收與防非同步 cancel 衝突
+  window._flsActiveUtterance = null;
+  let speechKeepAliveTimer = null;
+
+    // 語音庫快取與廣東話專用語音選擇
   let cachedVoices = [];
   function loadVoices() {
     if ('speechSynthesis' in window) {
@@ -231,40 +236,45 @@
     }
   }
 
-  function getBestVoice(targetLang) {
+  function getCantoneseVoice() {
     if (!cachedVoices.length) loadVoices();
     if (!cachedVoices.length) return null;
 
-    // 1. 精確比對語言代碼 (如 zh-HK)
-    let v = cachedVoices.find(voice => voice.lang === targetLang || voice.lang.replace('_', '-') === targetLang);
+    // 優先香港廣東話專屬語音 (zh-HK / yue / 香港 / 粵語 / Sin-ji / Danny / Hiujun / Tracy)
+    let v = cachedVoices.find(voice => 
+      voice.lang === 'zh-HK' || 
+      voice.lang === 'zh_HK' || 
+      voice.lang.includes('yue') || 
+      voice.name.toLowerCase().includes('cantonese') || 
+      voice.name.includes('香港') || 
+      voice.name.includes('粵語') ||
+      voice.name.includes('Sin-ji') ||
+      voice.name.includes('Danny') ||
+      voice.name.includes('Hiujun') ||
+      voice.name.includes('Tracy')
+    );
     if (v) return v;
 
-    // 2. 廣東話關鍵字 (zh-HK / yue / 粵語 / 香港)
-    if (targetLang.startsWith('zh')) {
-      v = cachedVoices.find(voice => 
-        voice.lang.includes('HK') || 
-        voice.lang.includes('yue') || 
-        voice.name.toLowerCase().includes('cantonese') || 
-        voice.name.includes('香港') || 
-        voice.name.includes('粵語')
-      );
-      if (v) return v;
+    // 次選繁體中文 (zh-TW)
+    v = cachedVoices.find(voice => voice.lang.includes('TW') || voice.lang.startsWith('zh'));
+    return v || null;
+  }
 
-      // 3. 次選繁體中文 (zh-TW)
-      v = cachedVoices.find(voice => voice.lang.includes('TW') || voice.lang.startsWith('zh'));
-      if (v) return v;
+  function stopSpeech() {
+    if (speechKeepAliveTimer) {
+      clearInterval(speechKeepAliveTimer);
+      speechKeepAliveTimer = null;
     }
-
-    // 4. 前綴比對
-    const prefix = targetLang.split('-')[0];
-    return cachedVoices.find(voice => voice.lang.startsWith(prefix)) || null;
+    window._flsActiveUtterance = null;
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
   }
 
   function speakText(text) {
     if (!isSpeechEnabled || !('speechSynthesis' in window)) return;
     try {
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.resume();
+      stopSpeech();
 
       const cleanText = text
         .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
@@ -276,18 +286,45 @@
       if (!cleanText) return;
 
       const utter = new SpeechSynthesisUtterance(cleanText);
-      utter.lang = utterLang;
+      utter.lang = 'zh-HK'; // 恆定香港廣東話，暫不切換其他語言
       utter.rate = 1.0;
       utter.pitch = 1.0;
 
-      const voice = getBestVoice(utterLang);
-      if (voice) utter.voice = voice;
+      const cVoice = getCantoneseVoice();
+      if (cVoice) utter.voice = cVoice;
 
+      // 保持全域強引用，防止 Chromium V8 / WebKit 在 14 秒時垃圾回收 (GC) 導致中途靜音
+      window._flsActiveUtterance = utter;
+
+      utter.onend = () => {
+        stopSpeech();
+      };
       utter.onerror = (e) => {
-        console.warn('[TourBot] 語音朗讀提示:', e);
+        console.warn('[TourBot] 語音提示:', e);
+        stopSpeech();
       };
 
-      window.speechSynthesis.speak(utter);
+      // 延遲 60ms 執行 speak()，避開 cancel() 的非同步線程衝突
+      setTimeout(() => {
+        try {
+          window.speechSynthesis.resume();
+          window.speechSynthesis.speak(utter);
+
+          // Chrome 15 秒保活心跳 (每 8 秒 pause + resume 確保長文本讀完全文)
+          if (speechKeepAliveTimer) clearInterval(speechKeepAliveTimer);
+          speechKeepAliveTimer = setInterval(() => {
+            if (!window.speechSynthesis.speaking) {
+              stopSpeech();
+            } else {
+              window.speechSynthesis.pause();
+              window.speechSynthesis.resume();
+            }
+          }, 8000);
+        } catch (err) {
+          console.warn('[TourBot] 播放失敗:', err);
+        }
+      }, 60);
+
     } catch (e) {
       console.warn('[TourBot] 語音朗讀未就緒:', e);
     }
@@ -307,8 +344,12 @@
               <img id="fls-bot-avatar-img" alt="FLS 導覽員" />
             </div>
             <div class="fls-bot-info">
-              <h3>FLS 智慧導覽員 <span class="fls-online-dot"></span> <span style="font-size:0.75rem; color:var(--bot-accent); font-weight:700;">在線</span></h3>
-              <p>小威 & 小黃 (隨頁解密內幕)</p>
+              <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                <h3 style="margin:0; font-size:1.02rem;">FLS 智慧導覽員</h3>
+                <span class="fls-online-dot"></span>
+                <span id="fls-bot-lang-badge" style="font-size:0.72rem; color:var(--bot-accent); font-weight:700; background:rgba(255,107,0,0.12); padding:1px 6px; border-radius:4px; letter-spacing:0.02em;">廣東話</span>
+              </div>
+              <p id="fls-bot-sub-desc" style="margin:2px 0 0 0; font-size:0.75rem; color:var(--bot-text-secondary);">小威 & 小黃 · 暫僅提供地道廣東話導覽</p>
             </div>
           </div>
           <div class="fls-header-actions">
@@ -354,8 +395,8 @@
           <span class="fls-launcher-badge"></span>
         </div>
         <div class="fls-launcher-text">
-          <div class="fls-launcher-title">專屬導覽員小威</div>
-          <div class="fls-launcher-sub" id="fls-launcher-sub-text">點擊即時解密</div>
+          <div class="fls-launcher-title" id="fls-launcher-title-text">專屬導覽員小威 <span id="fls-launcher-lang-badge" style="font-size:0.68rem; color:var(--bot-accent); font-weight:700; background:rgba(255,107,0,0.1); padding:1px 4px; border-radius:3px; margin-left:4px;">粵語</span></div>
+          <div class="fls-launcher-sub" id="fls-launcher-sub-text">點擊即時解密 (廣東話)</div>
         </div>
       </div>
     `;
@@ -400,7 +441,7 @@
         panel.classList.remove('active');
         launcher.style.display = 'flex';
         if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
+          stopSpeech();
         }
       }
     }
@@ -631,7 +672,7 @@
           const data = TOUR_KNOWLEDGE[activeTourKey];
           speakText(typeof data.getDirectText === 'function' ? data.getDirectText() : data.text);
         } else if (!isSpeechEnabled && 'speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
+          stopSpeech();
         }
       });
     }
@@ -656,52 +697,49 @@
   // ==========================================================================
   // 多語言切換適配監聽 (Tour Bot Multilingual Support)
   // ==========================================================================
-  let utterLang = 'zh-HK';
+  // ==========================================================================
+  // 多語言切換適配監聽 (Tour Bot Multilingual Support)
+  // 依管理層指示：導覽員對白與語音統一鎖定廣東話 (Cantonese Only)，暫不切換其他語言
+  // ==========================================================================
   window.addEventListener('fls:languagechange', function (e) {
     const lang = (e.detail && e.detail.lang) || 'zh-Hant';
     
-    // 更新語音朗讀口音
-    if (lang === 'en') {
-      utterLang = 'en-US';
-    } else if (lang === 'zh-Hans') {
-      utterLang = 'zh-CN';
-    } else {
-      utterLang = 'zh-HK';
-    }
+    // 永遠恆定鎖定香港廣東話口音，杜絕英文介面產生胡亂發音
+    utterLang = 'zh-HK';
 
-    // 更新導覽機械人介面文字
+    // 更新導覽機械人介面文字與專屬語言標籤
     const launcherTitle = document.querySelector('.fls-launcher-title');
-    const launcherSub = document.querySelector('.fls-launcher-sub');
+    const launcherSub = document.getElementById('fls-launcher-sub-text');
     const panelTitle = document.querySelector('.fls-bot-info h3');
-    const panelSub = document.querySelector('.fls-bot-info p');
+    const langBadge = document.getElementById('fls-bot-lang-badge');
+    const subDesc = document.getElementById('fls-bot-sub-desc');
     const btnReplay = document.getElementById('fls-btn-replay');
     const quoteLink = document.querySelector('.fls-btn-quote-link');
-    const topicPill = document.getElementById('fls-topic-pill');
 
     if (lang === 'en') {
-      if (launcherTitle) launcherTitle.textContent = 'Tour Guide Siu Wai';
-      if (launcherSub) launcherSub.textContent = 'Click for Insights';
-      if (panelTitle) panelTitle.innerHTML = 'FLS Smart Tour Guide <span class="fls-online-dot"></span> <span style="font-size:0.75rem; color:var(--bot-accent); font-weight:700;">Online</span>';
-      if (panelSub) panelSub.textContent = 'Siu Wai & Siu Wong (Behind the Scenes)';
-      if (btnReplay) btnReplay.textContent = '🔄 Replay Section';
+      if (launcherTitle) launcherTitle.innerHTML = 'Tour Guide Siu Wai <span id="fls-launcher-lang-badge" style="font-size:0.68rem; color:var(--bot-accent); font-weight:700; background:rgba(255,107,0,0.1); padding:1px 4px; border-radius:3px; margin-left:4px;">Cantonese</span>';
+      if (launcherSub && !launcherSub.textContent.includes('：')) launcherSub.textContent = 'Cantonese Tour Only (廣東話)';
+      if (panelTitle) panelTitle.textContent = 'FLS Tour Guide';
+      if (langBadge) langBadge.textContent = 'Cantonese Only';
+      if (subDesc) subDesc.textContent = 'Siu Wai & Siu Wong · Audio & Tour currently in Cantonese only';
+      if (btnReplay) btnReplay.textContent = '🔄 Replay (廣東話)';
       if (quoteLink) quoteLink.textContent = 'Instant Quote →';
-      if (topicPill && topicPill.textContent.indexOf('導覽') !== -1) topicPill.textContent = '📍 Ready for Tour';
     } else if (lang === 'zh-Hans') {
-      if (launcherTitle) launcherTitle.textContent = '专属导览员小威';
-      if (launcherSub) launcherSub.textContent = '点击即时解密';
-      if (panelTitle) panelTitle.innerHTML = 'FLS 智慧导览员 <span class="fls-online-dot"></span> <span style="font-size:0.75rem; color:var(--bot-accent); font-weight:700;">在线</span>';
-      if (panelSub) panelSub.textContent = '小威 & 小黄 (随页解密内幕)';
-      if (btnReplay) btnReplay.textContent = '🔄 重讲当前页段';
+      if (launcherTitle) launcherTitle.innerHTML = '专属导览员小威 <span id="fls-launcher-lang-badge" style="font-size:0.68rem; color:var(--bot-accent); font-weight:700; background:rgba(255,107,0,0.1); padding:1px 4px; border-radius:3px; margin-left:4px;">粤语</span>';
+      if (launcherSub && !launcherSub.textContent.includes('：')) launcherSub.textContent = '点击即时解密 (粤语)';
+      if (panelTitle) panelTitle.textContent = 'FLS 智慧导览员';
+      if (langBadge) langBadge.textContent = '粤语解说';
+      if (subDesc) subDesc.textContent = '小威 & 小黄 · 导览解说及语音暂仅提供地道粤语';
+      if (btnReplay) btnReplay.textContent = '🔄 重讲当前页段 (粤语)';
       if (quoteLink) quoteLink.textContent = '试算报价 →';
-      if (topicPill && topicPill.textContent.indexOf('導覽') !== -1) topicPill.textContent = '📍 准备导览';
     } else {
-      if (launcherTitle) launcherTitle.textContent = '專屬導覽員小威';
-      if (launcherSub) launcherSub.textContent = '點擊即時解密';
-      if (panelTitle) panelTitle.innerHTML = 'FLS 智慧導覽員 <span class="fls-online-dot"></span> <span style="font-size:0.75rem; color:var(--bot-accent); font-weight:700;">在線</span>';
-      if (panelSub) panelSub.textContent = '小威 & 小黃 (隨頁解密內幕)';
+      if (launcherTitle) launcherTitle.innerHTML = '專屬導覽員小威 <span id="fls-launcher-lang-badge" style="font-size:0.68rem; color:var(--bot-accent); font-weight:700; background:rgba(255,107,0,0.1); padding:1px 4px; border-radius:3px; margin-left:4px;">粵語</span>';
+      if (launcherSub && !launcherSub.textContent.includes('：')) launcherSub.textContent = '點擊即時解密 (廣東話)';
+      if (panelTitle) panelTitle.textContent = 'FLS 智慧導覽員';
+      if (langBadge) langBadge.textContent = '廣東話';
+      if (subDesc) subDesc.textContent = '小威 & 小黃 · 暫僅提供地道廣東話導覽';
       if (btnReplay) btnReplay.textContent = '🔄 重講當前頁段';
       if (quoteLink) quoteLink.textContent = '試算報價 →';
-      if (topicPill && topicPill.textContent.indexOf('導覽') !== -1) topicPill.textContent = '📍 準備導覽';
     }
   });
 
