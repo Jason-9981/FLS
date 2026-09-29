@@ -5,7 +5,7 @@
 window.FLS_DATA = {
   siteInfo: {
     name: "威黃物流服務有限公司",
-    nameEn: "Fenix Logistic Services Limited",
+    nameEn: "Fenix Logistics Services Ltd.",
     parentCompany: "FENIX GROUP HOLDINGS LTD",
     parentCompanyUrl: "http://www.fenixgh.com",
     sidefameUrl: "https://sidefame.com.hk/",
@@ -222,7 +222,7 @@ window.FLS_DATA = {
       firstTimeText: '你好！我係導覽員小威，身邊呢位戴眼鏡嘅係小黃。歡迎參觀威黃物流（FLS）！向下滾動我會為你解密每個位置嘅物流內幕！\n\n【幕後解密】母公司三黃集團（FENIX GROUP）自 1970 年在香港創立，深耕亞太精品市場超過 50 年；而 1994 年集團因應時裝零售高速發展，正式成立「威黃物流（FLS）」，率先引入日本先進 3PL 理念打造恆溫吊掛倉，30 年來深耕精品供應鏈！',
       text: '【首頁總覽】歡迎返嚟首頁！向下滾動即可隨時探索 12 萬呎港深倉網、按日計租與八大核心服務，我會即時為你解讀幕後運作細節。',
       quickReplies: [
-        { label: '🏢 威黃物流與三黃集團的關係', reply: '【品牌由來】公司英文全名為 Fenix Logistic Services Limited（FLS）。源於 1994 年母公司三黃集團（FENIX GROUP HOLDINGS LTD），「威黃」一名正是由母公司 FENIX 英文名音譯結合「三黃集團」體系命名而來，代表正統傳承 30 年的集團信譽與專業物流實力！' },
+        { label: '🏢 威黃物流與三黃集團的關係', reply: '【品牌由來】公司英文全名為 Fenix Logistics Services Ltd.（FLS）。源於 1994 年母公司三黃集團（FENIX GROUP HOLDINGS LTD），「威黃」一名正是由母公司 FENIX 英文名音譯結合「三黃集團」體系命名而來，代表正統傳承 30 年的集團信譽與專業物流實力！' },
         { label: '🎮 吉祥物設計彩蛋', reply: '【吉祥物設計彩蛋】哈哈，眼利！頭頂個遊戲手掣代表我們像打機一樣操控自如的智慧數據系統；手中捧著的書本代表嚴謹的 ISO 與標準作業程序（SOP），快得來又極度精準！' }
       ]
     },
