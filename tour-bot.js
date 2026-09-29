@@ -334,6 +334,7 @@
   function buildTourBotUI() {
     const container = document.createElement('div');
     container.id = 'fls-tour-bot-container';
+    container.className = 'no-translate';
 
     container.innerHTML = `
       <!-- 展開的導覽對話框 -->
