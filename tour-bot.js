@@ -203,7 +203,6 @@
   // 語音朗讀開關：預設開啟（true），但受瀏覽器 Autoplay 規範保護，訪客點擊打開機械人時觸發播放
   const storedSpeech = localStorage.getItem('fls_bot_speech');
   let isSpeechEnabled = storedSpeech !== null ? storedSpeech === 'true' : true;
-  let utterLang = 'zh-HK';
   let activeTourKey = null;
   let typingInterval = null;
 
@@ -218,25 +217,54 @@
     imgEl.src = AVATAR_CONFIG.src;
   }
 
-  // 語音朗讀管理：防止 GC 垃圾回收與防非同步 cancel 衝突
-  window._flsActiveUtterance = null;
-  let speechKeepAliveTimer = null;
-
-  function stopSpeech() {
-    if (speechKeepAliveTimer) {
-      clearInterval(speechKeepAliveTimer);
-      speechKeepAliveTimer = null;
-    }
-    window._flsActiveUtterance = null;
+  // 語音朗讀合成器
+  let cachedVoices = [];
+  function loadVoices() {
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
+      cachedVoices = window.speechSynthesis.getVoices() || [];
     }
+  }
+  if ('speechSynthesis' in window) {
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }
+
+  function getBestVoice(targetLang) {
+    if (!cachedVoices.length) loadVoices();
+    if (!cachedVoices.length) return null;
+
+    // 1. 精確比對語言代碼 (如 zh-HK)
+    let v = cachedVoices.find(voice => voice.lang === targetLang || voice.lang.replace('_', '-') === targetLang);
+    if (v) return v;
+
+    // 2. 廣東話關鍵字 (zh-HK / yue / 粵語 / 香港)
+    if (targetLang.startsWith('zh')) {
+      v = cachedVoices.find(voice => 
+        voice.lang.includes('HK') || 
+        voice.lang.includes('yue') || 
+        voice.name.toLowerCase().includes('cantonese') || 
+        voice.name.includes('香港') || 
+        voice.name.includes('粵語')
+      );
+      if (v) return v;
+
+      // 3. 次選繁體中文 (zh-TW)
+      v = cachedVoices.find(voice => voice.lang.includes('TW') || voice.lang.startsWith('zh'));
+      if (v) return v;
+    }
+
+    // 4. 前綴比對
+    const prefix = targetLang.split('-')[0];
+    return cachedVoices.find(voice => voice.lang.startsWith(prefix)) || null;
   }
 
   function speakText(text) {
     if (!isSpeechEnabled || !('speechSynthesis' in window)) return;
     try {
-      stopSpeech();
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
 
       const cleanText = text
         .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
@@ -248,42 +276,18 @@
       if (!cleanText) return;
 
       const utter = new SpeechSynthesisUtterance(cleanText);
-      utter.lang = utterLang || 'zh-HK';
+      utter.lang = utterLang;
       utter.rate = 1.0;
       utter.pitch = 1.0;
 
-      // 保持全域強引用，防止 Chromium V8 / WebKit 在 14 秒時垃圾回收 (GC) 導致中途靜音
-      window._flsActiveUtterance = utter;
+      const voice = getBestVoice(utterLang);
+      if (voice) utter.voice = voice;
 
-      utter.onend = () => {
-        stopSpeech();
-      };
       utter.onerror = (e) => {
-        console.warn('[TourBot] 語音提示:', e);
-        stopSpeech();
+        console.warn('[TourBot] 語音朗讀提示:', e);
       };
 
-      // 延遲 60ms 執行 speak()，避開 cancel() 的非同步線程衝突
-      setTimeout(() => {
-        try {
-          window.speechSynthesis.resume();
-          window.speechSynthesis.speak(utter);
-
-          // Chrome 15 秒保活心跳 (每 8 秒 pause + resume 確保長文本讀完全文)
-          if (speechKeepAliveTimer) clearInterval(speechKeepAliveTimer);
-          speechKeepAliveTimer = setInterval(() => {
-            if (!window.speechSynthesis.speaking) {
-              stopSpeech();
-            } else {
-              window.speechSynthesis.pause();
-              window.speechSynthesis.resume();
-            }
-          }, 8000);
-        } catch (err) {
-          console.warn('[TourBot] 播放失敗:', err);
-        }
-      }, 60);
-
+      window.speechSynthesis.speak(utter);
     } catch (e) {
       console.warn('[TourBot] 語音朗讀未就緒:', e);
     }
@@ -396,7 +400,7 @@
         panel.classList.remove('active');
         launcher.style.display = 'flex';
         if ('speechSynthesis' in window) {
-          stopSpeech();
+          window.speechSynthesis.cancel();
         }
       }
     }
@@ -627,7 +631,7 @@
           const data = TOUR_KNOWLEDGE[activeTourKey];
           speakText(typeof data.getDirectText === 'function' ? data.getDirectText() : data.text);
         } else if (!isSpeechEnabled && 'speechSynthesis' in window) {
-          stopSpeech();
+          window.speechSynthesis.cancel();
         }
       });
     }
@@ -652,6 +656,7 @@
   // ==========================================================================
   // 多語言切換適配監聽 (Tour Bot Multilingual Support)
   // ==========================================================================
+  let utterLang = 'zh-HK';
   window.addEventListener('fls:languagechange', function (e) {
     const lang = (e.detail && e.detail.lang) || 'zh-Hant';
     
