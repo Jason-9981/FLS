@@ -184,6 +184,61 @@
       background: #f8fafc; border: 1px solid var(--border); border-radius: 10px;
       padding: 10px 14px; margin-bottom: 16px; max-height: 140px; overflow-y: auto; font-size: 0.82rem;
     }
+
+    /* View Switcher & Report View CSS */
+    .controls-row {
+      display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap;
+    }
+    .view-switcher {
+      display: inline-flex; background: #e2e8f0; padding: 3px; border-radius: 8px; flex-shrink: 0;
+    }
+    .view-btn {
+      padding: 7px 14px; font-size: 0.84rem; font-weight: 600; border: none; background: transparent;
+      border-radius: 6px; cursor: pointer; color: #475569; display: inline-flex; align-items: center;
+      gap: 5px; white-space: nowrap; transition: all 0.15s;
+    }
+    .view-btn.active {
+      background: #fff; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-weight: 700;
+    }
+    .report-container {
+      max-width: 1440px; margin: 10px auto 40px; padding: 0 20px; width: 100%; display: none;
+    }
+    .kpi-deck {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 16px;
+    }
+    .kpi-card {
+      background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 14px;
+    }
+    .kpi-icon { font-size: 2rem; }
+    .kpi-val { font-size: 1.5rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
+    .kpi-lbl { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-top: 2px; }
+    .report-table-box {
+      background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow);
+    }
+    .report-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; text-align: left; }
+    .report-table th {
+      background: #0f172a; color: #f8fafc; padding: 10px 12px; font-weight: 700; font-size: 0.8rem; white-space: nowrap;
+    }
+    .report-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .report-table tr:hover { background: #f8fafc; }
+    .micro-thumb {
+      width: 40px; height: 40px; border-radius: 6px; object-fit: cover; cursor: pointer;
+      border: 1px solid var(--border); transition: transform 0.15s, box-shadow 0.15s; display: block;
+    }
+    .micro-thumb:hover { transform: scale(1.2); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+
+    @media (max-width: 768px) {
+      .controls-row { flex-direction: column; align-items: stretch !important; gap: 10px !important; }
+      .view-switcher { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
+      .view-btn { justify-content: center; padding: 8px 6px; font-size: 0.82rem; }
+      .report-container { padding: 0 12px; }
+      .kpi-deck { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .kpi-card { padding: 10px 12px; gap: 8px; }
+      .kpi-icon { font-size: 1.6rem; }
+      .kpi-val { font-size: 1.25rem; }
+      .kpi-lbl { font-size: 0.72rem; }
+    }
 </style>
 </head>
 <body>
@@ -225,12 +280,25 @@
 
   <!-- Toolbar -->
   <div class="toolbar">
-    <input type="text" class="search-input" id="searchKeyword" placeholder="🔍 搜尋道具名稱、門市 Code ID (如 1196)、貨架位置或備註..." oninput="renderCards()">
-    <div class="filter-tabs">
-      <button class="filter-tab active" data-filter="in-stock" onclick="setFilter('in-stock', this)">🟢 在庫道具 (<span id="countInStock">0</span>)</button>
-      <button class="filter-tab" data-filter="dispatched" onclick="setFilter('dispatched', this)">⚪ 已出庫 (<span id="countDispatched">0</span>)</button>
-      <button class="filter-tab" data-filter="disposed" onclick="setFilter('disposed', this)">🗑️ 已棄置道具 (<span id="countDisposed">0</span>)</button>
-      <button class="filter-tab" data-filter="all" onclick="setFilter('all', this)">全部道具 (<span id="countAll">0</span>)</button>
+    <input type="text" class="search-input" id="searchKeyword" placeholder="🔍 搜尋道具名稱、門市 Code ID (如 1196)、貨架位置或備註..." oninput="renderCurrentClientView()">
+    
+    <!-- Controls Row: View Switcher (圖卡 vs 宏觀報表) & Filter Tabs -->
+    <div class="controls-row">
+      <div class="view-switcher" id="clientViewSwitcher">
+        <button class="view-btn active" id="btnViewCard" onclick="switchClientView('card')">
+          🎴 圖卡總覽
+        </button>
+        <button class="view-btn" id="btnViewReport" onclick="switchClientView('report')">
+          📊 宏觀報表
+        </button>
+      </div>
+
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="in-stock" onclick="setFilter('in-stock', this)">🟢 在庫道具 (<span id="countInStock">0</span>)</button>
+        <button class="filter-tab" data-filter="dispatched" onclick="setFilter('dispatched', this)">⚪ 已出庫 (<span id="countDispatched">0</span>)</button>
+        <button class="filter-tab" data-filter="disposed" onclick="setFilter('disposed', this)">🗑️ 已棄置道具 (<span id="countDisposed">0</span>)</button>
+        <button class="filter-tab" data-filter="all" onclick="setFilter('all', this)">全部道具 (<span id="countAll">0</span>)</button>
+      </div>
     </div>
   </div>
 
@@ -254,6 +322,67 @@
 
   <!-- Cards Grid -->
   <div class="grid-container" id="cardsGrid"></div>
+
+  <!-- 2. Macro Report View Area (宏觀總覽報表 - 詳細清單) -->
+  <div class="report-container" id="reportView" style="display: none;">
+    <!-- KPI Deck -->
+    <div class="kpi-deck">
+      <div class="kpi-card">
+        <div class="kpi-icon">📦</div>
+        <div>
+          <div class="kpi-val" id="kpiInStock">0</div>
+          <div class="kpi-lbl">目前在倉道具件數</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🚚</div>
+        <div>
+          <div class="kpi-val" id="kpiDispatched">0</div>
+          <div class="kpi-lbl">已調配出貨件數</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🏢</div>
+        <div>
+          <div class="kpi-val" id="kpiActiveStores">0</div>
+          <div class="kpi-lbl">流轉涉及門市總數</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🗑️</div>
+        <div>
+          <div class="kpi-val" id="kpiDisposed">0</div>
+          <div class="kpi-lbl">已棄置 / 銷毀記錄</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Report Table Box -->
+    <div class="report-table-box">
+      <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th style="width: 40px; text-align: center;">選取</th>
+              <th style="width: 50px; text-align: center;">縮圖</th>
+              <th style="min-width: 120px;">道具編號</th>
+              <th style="min-width: 160px;">道具名稱及規格</th>
+              <th style="min-width: 140px;">來源門市 (Code ID)</th>
+              <th style="min-width: 110px;">貨架存放位置</th>
+              <th style="min-width: 120px;">入倉時間</th>
+              <th style="min-width: 90px;">當前狀態</th>
+              <th style="min-width: 140px;">送出目的地 / 出貨時間</th>
+              <th style="min-width: 140px;">備註說明</th>
+              <th style="min-width: 130px; text-align: right;">申請操作</th>
+            </tr>
+          </thead>
+          <tbody id="reportTableBody">
+            <!-- Rendered via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
   
   <!-- 1. Client Dispatch Order Modal (出貨申請視窗) -->
@@ -403,11 +532,559 @@
       "IN_VM-20260922-0417_20260922092657.jpg": "1bkpmjFY4pP_gtSMBzZy8reDoVIAmangQ",
       "IN_VM-20260923-7127_20260923175207.jpg": "1LJjXQ6K8Tk1ZJ_lSVLbhKXmGbYLLnk15",
       "IN_VM-20260924-2468_20260924144748.jpg": "1khsIGMTGHsZl7BMBUXduCDDLwy-HTOq-",
-      "IN_VM-20260929-6076_20260929151436.jpg": "17_Imi4-GIAM2a43BQq1xcWwXq-1J9QmL"
-    };
+      "IN_VM-20260929-6076_20260929151436.jpg": "17_Imi4-GIAM2a43BQq1xcWwXq-1J9QmL",
+      "IN_VM-20261008-0220_20261008170340.jpg": "18OoBK_4DZ8F2C4_B2dTcAR9wRZcgU7bk",
+      "IN_VM-20261008-0122_20261008170202.jpg": "1W9aTaRU3dGTIm6wTuBv1jEaZZLjN08dt",
+      "IN_VM-20261008-0070_20261008170110.jpg": "1VIxGwz_OhaR2Gax_MyxqK-rOiYDMU7hx",
+      "IN_VM-20261008-9992_20261008165952.jpg": "1v1RB8eHUVFg_dXUMRx3G6krZXYLdiMzp"
+    };;
 
     // 內嵌 6 筆基準資料 (保證即使離線亦有資料)
     const EMBEDDED_ITEMS = [
+  {
+    "id": "VM-20261008-0220",
+    "title": "MM相框",
+    "source": "MM南豐紗廠Event",
+    "location": "502",
+    "inboundTime": "2026-10-08 17:03:40",
+    "status": "dispatched",
+    "dispatchTime": "2026-10-08 17:06:49",
+    "dispatchDest": "土瓜灣",
+    "notes": "兩個完好送土瓜灣，另外三個棄置 | 出貨備註: Bernard order",
+    "operator": "Pong",
+    "photoPath": "/photos/IN_VM-20261008-0220_20261008170340.jpg",
+    "img": "",
+    "features": [
+      0.06241053776817523,
+      0.05862299557991299,
+      0.05307335505874024,
+      0.024311642969781347,
+      0.021393318031306577,
+      0.023740616504186546,
+      0.06945062808191609,
+      0.07075383018482716,
+      0.07393284061342731,
+      0.031557998461858305,
+      0.030845502417334653,
+      0.033693421295229446,
+      0.09377775034892057,
+      0.09287512355788052,
+      0.0906486788326885,
+      0.02900748048956457,
+      0.027578146391435767,
+      0.02928027667703713,
+      0.061015951358560076,
+      0.05656425601875276,
+      0.04755003608004657,
+      0.030675620440831292,
+      0.026343252524492263,
+      0.024244277941779052,
+      0.05933989868234333,
+      0.060202255604245476,
+      0.06139173842168866,
+      0.03004992973035274,
+      0.026529917097894908,
+      0.02762460751482846,
+      0.07940224805507158,
+      0.08404103775516227,
+      0.08487009432491127,
+      0.02194074106604635,
+      0.021919135563393612,
+      0.025200869702832043,
+      0.05403956707640452,
+      0.054371037304199385,
+      0.04242878853620333,
+      0.023033951622206804,
+      0.01813002988015446,
+      0.020958348153115796,
+      0.07207088304115926,
+      0.06977362337705749,
+      0.061758990149683245,
+      0.03282975410413417,
+      0.025417589156645274,
+      0.0294631196319598,
+      0.08366951603642836,
+      0.07551191478397354,
+      0.0656213895967064,
+      0.024309271010834202,
+      0.02177182552923154,
+      0.025705792622998793,
+      0.0,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.0,
+      0.0,
+      0.1559054558251652,
+      0.0,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.0,
+      0.1559054558251652,
+      0.0,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.0,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.0,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.1559054558251652,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652,
+      0.0,
+      0.1559054558251652,
+      0.1559054558251652
+    ]
+  },
+  {
+    "id": "VM-20261008-0122",
+    "title": "TY window display(8-10-26)",
+    "source": "TSTY",
+    "location": "回倉棄置",
+    "inboundTime": "2026-10-08 17:02:02",
+    "status": "disposed",
+    "dispatchTime": "",
+    "dispatchDest": "",
+    "notes": "",
+    "operator": "Pong",
+    "photoPath": "/photos/IN_VM-20261008-0122_20261008170202.jpg",
+    "img": "",
+    "features": [
+      0.08494252215495361,
+      0.08857590628157523,
+      0.08411932743873138,
+      0.018971742106521545,
+      0.026696288307305558,
+      0.02681062642017341,
+      0.08552728028662443,
+      0.10086032266694056,
+      0.08846486545311665,
+      0.022874564486119017,
+      0.02951409695052727,
+      0.024268549154008907,
+      0.09301301402732053,
+      0.10065577690633999,
+      0.09473344721891501,
+      0.02785089856257277,
+      0.030233914729592845,
+      0.028216587003671696,
+      0.08132118093165977,
+      0.08408242961048855,
+      0.07958876934343025,
+      0.024514304767158785,
+      0.02568310401380044,
+      0.024257550762898063,
+      0.07750102511931195,
+      0.0866346914910248,
+      0.07706126314674329,
+      0.01981156466330883,
+      0.028037722349858483,
+      0.02688192120180237,
+      0.06802691227157161,
+      0.06962144824716596,
+      0.0641535830961993,
+      0.02807380143930894,
+      0.031035978541891995,
+      0.032518215808519484,
+      0.10693383619391669,
+      0.10483592968466644,
+      0.10182738715616878,
+      0.019246450060088294,
+      0.019839393098656174,
+      0.018573588191278485,
+      0.11743536698501618,
+      0.13178360057354943,
+      0.12258476755601719,
+      0.03019275201654976,
+      0.026557849501622294,
+      0.029382994540628975,
+      0.08734693469574763,
+      0.08967734317381794,
+      0.08881416423220831,
+      0.03540404924025396,
+      0.03821375981251114,
+      0.0397672868987143,
+      0.0,
+      0.0,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.0,
+      0.0,
+      0.0,
+      0.16649887960215518,
+      0.0,
+      0.0,
+      0.16649887960215518,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.16649887960215518,
+      0.0,
+      0.16649887960215518,
+      0.0,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.0,
+      0.0,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.0,
+      0.0,
+      0.16649887960215518,
+      0.0,
+      0.16649887960215518,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.0,
+      0.0,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.0,
+      0.0,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.0,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.16649887960215518,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "disposalReason": "客人要求棄置 (店舖指示銷毀)",
+    "disposalNotes": "已送垃圾站",
+    "disposalTime": "2026-10-08 17:05:46",
+    "disposedBy": "Pong"
+  },
+  {
+    "id": "VM-20261008-0070",
+    "title": "MM外框",
+    "source": "MM南豐紗廠 Event",
+    "location": "502倉",
+    "inboundTime": "2026-10-08 17:01:10",
+    "status": "disposed",
+    "dispatchTime": "",
+    "dispatchDest": "",
+    "notes": "",
+    "operator": "Pong",
+    "photoPath": "/photos/IN_VM-20261008-0070_20261008170110.jpg",
+    "img": "",
+    "features": [
+      0.08247129052799511,
+      0.06975975783685848,
+      0.06244600896900562,
+      0.030115150838548887,
+      0.029912650626553725,
+      0.02857559580157152,
+      0.09143620359734407,
+      0.07464220714520499,
+      0.06863196867159942,
+      0.027636888100813987,
+      0.02770418906821257,
+      0.0315724038991654,
+      0.10301316948549774,
+      0.08422586002676502,
+      0.0629986985073981,
+      0.029704486942460508,
+      0.027212849341217232,
+      0.033522649650222135,
+      0.0848805895828898,
+      0.06873832882388091,
+      0.06526260991911775,
+      0.03767507423572993,
+      0.035004131546701976,
+      0.038040605890974896,
+      0.07797431814619542,
+      0.06863801003357058,
+      0.062440216282950954,
+      0.041268928828820065,
+      0.038236699041121716,
+      0.03951310619847098,
+      0.0816988885033878,
+      0.0646282327801581,
+      0.05007051058101993,
+      0.03879329425420256,
+      0.03323834968969746,
+      0.033018069149673396,
+      0.08217592205118752,
+      0.06704634276409385,
+      0.042542851665003635,
+      0.025920858493101374,
+      0.02490825991315832,
+      0.0225145981850122,
+      0.0902913776938064,
+      0.07644208929675773,
+      0.05325528841548868,
+      0.023887725645880275,
+      0.025200205439115417,
+      0.026213223354917645,
+      0.08883081139230255,
+      0.061089901180421895,
+      0.04408072204454675,
+      0.026276245633753127,
+      0.029818192786275125,
+      0.030173657942900677,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.0,
+      0.0,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.0,
+      0.0,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.0,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.16361135548705039,
+      0.0,
+      0.0,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.0,
+      0.0,
+      0.0,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.0,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.0,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.0,
+      0.0,
+      0.0,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.0,
+      0.0,
+      0.16361135548705039,
+      0.0,
+      0.0,
+      0.16361135548705039,
+      0.16361135548705039,
+      0.0,
+      0.0,
+      0.16361135548705039,
+      0.0,
+      0.0
+    ],
+    "disposalReason": "客人要求棄置 (店舖指示銷毀)",
+    "disposalNotes": "已送垃圾站",
+    "disposalTime": "2026-10-08 17:05:46",
+    "disposedBy": "Pong"
+  },
+  {
+    "id": "VM-20261008-9992",
+    "title": "VM道具(17/10送回店)",
+    "source": "FWCT",
+    "location": "502AB",
+    "inboundTime": "2026-10-08 16:59:52",
+    "status": "in-stock",
+    "dispatchTime": "",
+    "dispatchDest": "",
+    "notes": "",
+    "operator": "Pong",
+    "photoPath": "/photos/IN_VM-20261008-9992_20261008165952.jpg",
+    "img": "",
+    "features": [
+      0.09985850653781367,
+      0.09237749620230486,
+      0.08099338339120264,
+      0.034329692081445484,
+      0.03253943864477533,
+      0.033021850862834164,
+      0.10440012857568465,
+      0.09351138267674174,
+      0.0736313069379944,
+      0.02131119093974741,
+      0.02063418957724017,
+      0.022482775725415464,
+      0.0972457763779766,
+      0.08366157094623643,
+      0.06359197413921926,
+      0.02952058614249947,
+      0.027873530775599682,
+      0.02490186172189891,
+      0.07664733332858492,
+      0.06565050379756193,
+      0.049005129887686,
+      0.020919485551874832,
+      0.025028065271847193,
+      0.034328188186298646,
+      0.10036880137562515,
+      0.09623382652950595,
+      0.09224649583243352,
+      0.02273662363760875,
+      0.02785883751814994,
+      0.03836127918284748,
+      0.09617026929635394,
+      0.08874656846852134,
+      0.07984120793685924,
+      0.022163909581261416,
+      0.02761727057521784,
+      0.039665590285166134,
+      0.08286242730767157,
+      0.08037781589311241,
+      0.07599726708142154,
+      0.018292544087562937,
+      0.0168112376476941,
+      0.017986722215156518,
+      0.05542916940625116,
+      0.05736260324949365,
+      0.05799354277650092,
+      0.016143968707303235,
+      0.013124455096758128,
+      0.010685096795560406,
+      0.07608714752627124,
+      0.07597421408467402,
+      0.07483732486657146,
+      0.009445750304779909,
+      0.009001855844175297,
+      0.00877223868554126,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.0,
+      0.0,
+      0.0,
+      0.1693367363750187,
+      0.0,
+      0.0,
+      0.0,
+      0.1693367363750187,
+      0.0,
+      0.0,
+      0.1693367363750187,
+      0.0,
+      0.0,
+      0.0,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.0,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.0,
+      0.0,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.0,
+      0.0,
+      0.0,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.1693367363750187,
+      0.0,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.1693367363750187,
+      0.0
+    ]
+  },
   {
     "id": "VM-20260929-6076",
     "title": "Mous3",
@@ -1090,14 +1767,14 @@
         indicator.style.background = "#f1f5f9";
       }
 
-      renderCards();
+      renderCurrentClientView();
     }
 
     function setFilter(filter, el) {
       currentFilter = filter;
       document.querySelectorAll(".filter-tab").forEach(t => t.classList.remove("active"));
       el.classList.add("active");
-      renderCards();
+      renderCurrentClientView();
     }
 
     
@@ -1588,7 +2265,126 @@
       clearClientSelection();
     }
 
+
+    // =========================================================================
+    // 視圖切換引擎 (圖卡總覽 Card View vs. 宏觀報表 Macro Report View)
+    // =========================================================================
+    let currentClientView = "card"; // card or report
+
+    function switchClientView(view) {
+      currentClientView = view;
+      document.getElementById("btnViewCard").classList.toggle("active", view === "card");
+      document.getElementById("btnViewReport").classList.toggle("active", view === "report");
+      document.getElementById("cardsGrid").style.display = view === "card" ? "grid" : "none";
+      document.getElementById("reportView").style.display = view === "report" ? "block" : "none";
+      renderCurrentClientView();
+    }
+
+    function renderCurrentClientView() {
+      if (currentClientView === "card") {
+        renderCards();
+      } else {
+        renderClientReport();
+      }
+    }
+
+    function updateClientKPIs() {
+      let inStock = 0, dispatched = 0, disposed = 0;
+      let storeSet = new Set();
+      clientItems.forEach(i => {
+        if (i.status === "in-stock") inStock++;
+        else if (i.status === "dispatched") dispatched++;
+        else if (i.status === "disposed") disposed++;
+        if (i.source) storeSet.add(i.source);
+        if (i.dispatchDest) storeSet.add(i.dispatchDest);
+      });
+      document.getElementById("countInStock").innerText = inStock;
+      document.getElementById("countDispatched").innerText = dispatched;
+      if (document.getElementById("countDisposed")) document.getElementById("countDisposed").innerText = disposed;
+      document.getElementById("countAll").innerText = inStock + dispatched + disposed;
+
+      if (document.getElementById("kpiInStock")) document.getElementById("kpiInStock").innerText = inStock;
+      if (document.getElementById("kpiDispatched")) document.getElementById("kpiDispatched").innerText = dispatched;
+      if (document.getElementById("kpiDisposed")) document.getElementById("kpiDisposed").innerText = disposed;
+      if (document.getElementById("kpiActiveStores")) document.getElementById("kpiActiveStores").innerText = storeSet.size;
+    }
+
+    function renderClientReport() {
+      updateClientKPIs();
+      const tbody = document.getElementById("reportTableBody");
+      tbody.innerHTML = "";
+      const q = document.getElementById("searchKeyword").value.trim().toLowerCase();
+
+      const filtered = clientItems.filter(i => {
+        const matchesFilter = (currentFilter === "all") ? (i.status !== "removed") : (i.status === currentFilter);
+        const matchesKeyword = !q || 
+          (i.title && i.title.toLowerCase().includes(q)) || 
+          (i.source && i.source.toLowerCase().includes(q)) || 
+          (i.location && i.location.toLowerCase().includes(q)) || 
+          (i.dispatchDest && i.dispatchDest.toLowerCase().includes(q)) ||
+          (i.disposalReason && i.disposalReason.toLowerCase().includes(q)) ||
+          (i.notes && i.notes.toLowerCase().includes(q));
+        return matchesFilter && matchesKeyword && i.status !== "removed";
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; padding: 40px; color: #94a3b8; font-weight: 600;">無符合條件之數據記錄</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(i => {
+        const tr = document.createElement("tr");
+        const displayImg = formatPhotoUrl(i.photoPath) || i.img || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'><rect width='400' height='300' fill='%23f1f5f9'/><text x='200' y='145' font-size='42' text-anchor='middle'>📦</text><text x='200' y='190' font-size='14' text-anchor='middle' fill='%2364748b' font-weight='bold'>無相片記錄</text></svg>";
+        const isInStock = i.status === "in-stock";
+        const isDispatched = i.status === "dispatched";
+        const isDisposed = i.status === "disposed";
+
+        let stBadge = `<span style="color: #16a34a; font-weight: 700;">🟢 在庫</span>`;
+        if (isDispatched) stBadge = `<span style="color: #64748b; font-weight: 600;">⚪ 已出庫</span>`;
+        else if (isDisposed) stBadge = `<span style="color: #b45309; font-weight: 700; background: #fef3c7; padding: 2px 6px; border-radius: 4px;">🗑️ 已棄置</span>`;
+
+        let destInfo = "-";
+        if (isDispatched) {
+          destInfo = `${i.dispatchDest} <br><span style='color: #94a3b8; font-size: 0.72rem;'>${(i.dispatchTime||'').substring(0,16)}</span>`;
+        } else if (isDisposed) {
+          destInfo = `<span style='color: #b45309; font-weight: 600;'>[已銷毀處置]</span><br><span style='color: #94a3b8; font-size: 0.72rem;'>${(i.disposalTime||'').substring(0,16)}</span>`;
+        }
+
+        let notesDisplay = i.notes || '';
+        if (isDisposed && i.disposalReason) {
+          notesDisplay = `<span style="color: #b45309; font-weight: 600;">[原因: ${i.disposalReason}]</span> ` + (notesDisplay ? ' | ' + notesDisplay : '');
+        }
+
+        tr.innerHTML = `
+          <td style="text-align: center;">
+            ${isInStock ? `
+            <input type="checkbox" class="client-card-cb" value="${i.id}" ${clientSelectedSet.has(i.id)?'checked':''} onchange="toggleClientItem('${i.id}', this.checked, event)" style="width: 17px; height: 17px; accent-color: #0284c7; cursor: pointer;">
+            ` : '-'}
+          </td>
+          <td style="text-align: center;">
+            <img class="micro-thumb" src="${displayImg}" onclick="viewLightbox('${displayImg}')" title="點擊放大相片" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\' viewBox=\'0 0 40 40\'><rect width=\'40\' height=\'40\' fill=\'%23f1f5f9\'/><text x=\'20\' y=\'25\' font-size=\'18\' text-anchor=\'middle\'>📦</text></svg>';">
+          </td>
+          <td style="font-weight: 700; color: #334155; font-size: 0.78rem;">${i.id}</td>
+          <td style="font-weight: 700; color: #0f172a;">${i.title}</td>
+          <td>${i.source}</td>
+          <td><span style="background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; font-weight: 600;">${i.location}</span></td>
+          <td>${(i.inboundTime || '').substring(0, 16)}</td>
+          <td>${stBadge}</td>
+          <td>${destInfo}</td>
+          <td style="font-size: 0.78rem; max-width: 160px;">${notesDisplay || '-'}</td>
+          <td style="text-align: right; white-space: nowrap;">
+            ${isInStock ? `
+            <button class="btn-c-act btn-c-dispatch" style="padding: 4px 8px; font-size: 0.72rem; display: inline-flex;" onclick="openClientSingleDispatch('${i.id}')">🚚 出庫</button>
+            <button class="btn-c-act btn-c-dispose" style="padding: 4px 8px; font-size: 0.72rem; display: inline-flex; margin-left: 4px;" onclick="openClientSingleDispose('${i.id}')">🗑️ 棄置</button>
+            ` : '-'}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
 function renderCards() {
+      updateClientKPIs();
       const q = document.getElementById("searchKeyword").value.trim().toLowerCase();
       const grid = document.getElementById("cardsGrid");
       grid.innerHTML = "";
