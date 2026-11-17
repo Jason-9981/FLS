@@ -515,34 +515,32 @@
     const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR1_vQqBCDcZkEM3DTcYQ0u6IoW0mp32LxioWlPaw0rCa25syOUGSaXZ4s20Qq5GiI47R1mD5tZh--G/pub?gid=248915067&single=true&output=csv';
 
     // 完美解決方案：當在 GitHub 獨立執行時，若無本機相片，則直接帶領瀏覽器讀取預設圖示或透過 ImgBB / 穩定圖床 / GitHub 自身 Repo 儲存
-    function formatPhotoUrl(ref) {
-      if (!ref) return "";
-      ref = ref.trim();
+ // 智能相片直連轉譯引擎 (完美支援 GitHub 與內網)
+function formatPhotoUrl(ref) {
+  if (!ref) return "";
+  ref = ref.trim();
 
-      // 1. 若已經是完整 HTTP 連結
-      if (ref.startsWith("http://") || ref.startsWith("https://")) {
-        const match = ref.match(/\/d\/([a-zA-Z0-9_-]+)/) || ref.match(/id=([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-          return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
-        }
-        return ref;
-      }
+  // 1. 如果 CSV 裡面直接寫的是 Google Drive 完整的分享網址，自動提取裡面的 ID
+  const matchLink = ref.match(/\/d\/([a-zA-Z0-9_-]+)/) || ref.match(/id=([a-zA-Z0-9_-]+)/);
+  if (matchLink && matchLink[1]) {
+    return `https://drive.google.com/uc?export=view&id=${matchLink[1]}`;
+  }
 
-      // 2. 若在公司內網執行且有後端伺服器 (支援本機 /photos/)
-      const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
-      if (isLocal && ref.startsWith("/photos/")) {
-        return ref;
-      }
+  // 2. 如果 CSV 裡面記錄的剛好就是 Google Drive 的純檔案 ID (長度通常大於 20 碼且不含斜線)
+  if (ref.length > 20 && !ref.includes('/') && !ref.includes('.')) {
+    return `https://drive.google.com/uc?export=view&id=${ref}`;
+  }
 
-      // 3. 針對 GitHub 獨立遠端：
-      // 如果你希望 GitHub 也能顯示相片，最完美的方法係將相片連同 client.html 一齊推送到 GitHub 倉庫的 photos 資料夾內！
-      // 這樣 GitHub 網址就會變成 `./photos/檔名.jpg`，100% 完美呈現！
-      if (ref.startsWith("/photos/")) {
-        return '.' + ref;
-      }
+  // 3. 如果是舊有的本地路徑 /photos/xxx.jpg 且在公司內網執行
+  const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
+  if (isLocal && ref.startsWith("/photos/")) {
+    return ref;
+  }
 
-      return ref;
-    }
+  // 4. 萬用兜底：如果在 GitHub 遠端且找不到對應圖片，自動指向你 Google Drive 的 photos 共用資料夾
+  const GOOGLE_DRIVE_PHOTOS_FOLDER_ID = '1ftBiKp09GErLaZs2AGgAhFHWzWYram_P';
+  return `https://drive.google.com/thumbnail?id=${GOOGLE_DRIVE_PHOTOS_FOLDER_ID}&sz=w800`;
+}
 
     // CSV 解析器
     function parseCSV(text) {
