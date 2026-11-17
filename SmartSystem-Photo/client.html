@@ -514,10 +514,7 @@
     // -------------------------------------------------------------------------
     const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR1_vQqBCDcZkEM3DTcYQ0u6IoW0mp32LxioWlPaw0rCa25syOUGSaXZ4s20Qq5GiI47R1mD5tZh--G/pub?gid=248915067&single=true&output=csv';
 
-    const API_BASE = (window.location.protocol === 'file:') ? 'http://localhost:8888' : '';
-    const GOOGLE_DRIVE_PHOTOS_FOLDER_ID = '1ftBiKp09GErLaZs2AGgAhFHWzWYram_P';
-
-    // 完美兼容 GitHub 與內網的智能相片轉譯器
+    // 完美解決方案：當在 GitHub 獨立執行時，若無本機相片，則直接帶領瀏覽器讀取預設圖示或透過 ImgBB / 穩定圖床 / GitHub 自身 Repo 儲存
     function formatPhotoUrl(ref) {
       if (!ref) return "";
       ref = ref.trim();
@@ -531,14 +528,20 @@
         return ref;
       }
 
-      // 2. 若在公司內網執行且有後端伺服器
+      // 2. 若在公司內網執行且有後端伺服器 (支援本機 /photos/)
       const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
       if (isLocal && ref.startsWith("/photos/")) {
         return ref;
       }
 
-      // 3. 針對 GitHub 獨立遠端：直接把檔名轉化為 Google Drive 檢視/預覽縮圖
-      return `https://drive.google.com/thumbnail?id=${GOOGLE_DRIVE_PHOTOS_FOLDER_ID}&sz=w800`;
+      // 3. 針對 GitHub 獨立遠端：
+      // 如果你希望 GitHub 也能顯示相片，最完美的方法係將相片連同 client.html 一齊推送到 GitHub 倉庫的 photos 資料夾內！
+      // 這樣 GitHub 網址就會變成 `./photos/檔名.jpg`，100% 完美呈現！
+      if (ref.startsWith("/photos/")) {
+        return '.' + ref;
+      }
+
+      return ref;
     }
 
     // CSV 解析器
@@ -947,7 +950,7 @@
       win.document.close();
     }
 
-    function handleClientDispatchSubmit(e) {
+    function handleClientDisposalSubmit(e) {
       e.preventDefault();
       if (!clientActiveRequestItems || clientActiveRequestItems.length === 0) return;
       const dest = document.getElementById("reqDestShop").value;
@@ -978,153 +981,6 @@
       window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg), '_blank');
       closeClientModal('clientDispatchModal');
       clearClientSelection();
-    }
-
-    function generateDisposalPDF() {
-      if (!clientActiveRequestItems || clientActiveRequestItems.length === 0) return;
-      const reason = document.getElementById("reqDisposeReason").value;
-      const applicant = document.getElementById("reqDisposeApplicant").value.trim();
-      const notes = document.getElementById("reqDisposeNotes").value.trim();
-
-      if (!applicant) {
-        alert("請先填寫授權人姓名及聯絡電話！");
-        return;
-      }
-
-      const orderNo = "FLS-DA-" + new Date().toISOString().slice(0,10).replace(/-/g,'') + "-" + Math.floor(1000 + Math.random() * 9000);
-      const applyTime = new Date().toLocaleString('zh-HK', { hour12: false });
-
-      let rowsHtml = "";
-      clientActiveRequestItems.forEach((it, idx) => {
-        const photo = formatPhotoUrl(it.photoPath) || it.img || "";
-        rowsHtml += `
-          <tr>
-            <td style="text-align:center; font-weight: bold;">${idx + 1}</td>
-            <td style="font-weight:bold; color:#b45309;">${it.id}</td>
-            <td style="font-weight:bold;">${it.title}</td>
-            <td>${it.source || '-'}</td>
-            <td>${it.location || '-'}</td>
-            <td style="text-align:center;">
-              ${photo ? `<img src="${photo}" style="width:50px; height:38px; object-fit:cover; border-radius:4px; border:1px solid #cbd5e1;">` : '無相片'}
-            </td>
-            <td style="color:#b45309; font-weight:bold;">授權銷毀</td>
-          </tr>
-        `;
-      });
-
-      const printHtml = `
-<!DOCTYPE html>
-<html lang="zh-HK">
-<head>
-  <meta charset="UTF-8">
-  <title>${orderNo} · VM 道具報廢授權指示單</title>
-  <style>
-    @page { size: A4 portrait; margin: 15mm; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; color: #0f172a; margin: 0; padding: 15px; font-size: 13px; }
-    .header { display: flex; justify-content: space-between; border-bottom: 2.5px solid #b45309; padding-bottom: 12px; margin-bottom: 14px; }
-    .co-name { font-size: 20px; font-weight: 800; color: #0f172a; }
-    .co-sub { font-size: 11px; color: #64748b; font-weight: 600; }
-    .title-box { text-align: right; }
-    .doc-title { font-size: 18px; font-weight: 800; color: #b45309; }
-    .doc-no { font-size: 12px; font-weight: 700; color: #334155; margin-top: 3px; }
-    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 12.5px; }
-    .meta-row { display: flex; }
-    .meta-label { width: 110px; color: #92400e; font-weight: 600; }
-    .meta-val { flex: 1; font-weight: 700; color: #0f172a; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 12px; }
-    th { background: #b45309; color: #fff; padding: 8px; text-align: left; font-weight: 700; border: 1px solid #b45309; }
-    td { border: 1px solid #e2e8f0; padding: 7px 8px; vertical-align: middle; }
-    tr:nth-child(even) td { background: #f8fafc; }
-    .sig-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
-    .sig-box { border: 1px dashed #94a3b8; border-radius: 8px; padding: 12px; height: 100px; display: flex; flex-direction: column; justify-content: space-between; font-size: 12px; background: #fafafa; }
-    .sig-box-title { font-weight: 700; color: #334155; }
-    .sig-box-line { border-top: 1px solid #cbd5e1; text-align: center; color: #94a3b8; padding-top: 4px; font-size: 10.5px; }
-    @media print {
-      body { padding: 0; }
-      .no-print { display: none !important; }
-    }
-  </style>
-</head>
-<body>
-  <div class="no-print" style="background:#fef3c7; padding:10px 14px; border-radius:6px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
-    <span style="font-weight:bold; color:#92400e;">📄 PDF 列印預覽 (請點擊右側按鈕儲存為 PDF 或直接列印)</span>
-    <button onclick="window.print()" style="background:#b45309; color:#fff; border:none; padding:6px 16px; border-radius:6px; font-weight:bold; cursor:pointer;">🖨️ 列印 / 儲存為 PDF</button>
-  </div>
-
-  <div class="header">
-    <div>
-      <div class="co-name">威黃物流服務有限公司</div>
-      <div class="co-sub">Fenix Logistics Services Limited · 視覺道具處置組</div>
-    </div>
-    <div class="title-box">
-      <div class="doc-title">VM 道具報廢 / 棄置授權指示單</div>
-      <div class="doc-no">指示單號：${orderNo}</div>
-    </div>
-  </div>
-
-  <div class="meta-grid">
-    <div class="meta-row">
-      <span class="meta-label">授權客戶：</span>
-      <span class="meta-val">Sidefame Limited (視藝 VM 部)</span>
-    </div>
-    <div class="meta-row">
-      <span class="meta-label">指示時間：</span>
-      <span class="meta-val">${applyTime}</span>
-    </div>
-    <div class="meta-row">
-      <span class="meta-label">報廢棄置原因：</span>
-      <span class="meta-val" style="color:#b45309;">${reason}</span>
-    </div>
-    <div class="meta-row">
-      <span class="meta-label">授權人 / 聯絡：</span>
-      <span class="meta-val">${applicant}</span>
-    </div>
-    <div class="meta-row" style="grid-column: 1 / -1;">
-      <span class="meta-label">處置要求備註：</span>
-      <span class="meta-val" style="color:#b45309;">${notes || '授權 FLS 威黃物流協助進行銷毀及垃圾站清運'}</span>
-    </div>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th style="width:35px; text-align:center;">#</th>
-        <th style="width:130px;">道具編號</th>
-        <th>道具名稱及規格</th>
-        <th style="width:140px;">來源門市</th>
-        <th style="width:100px;">存放位置</th>
-        <th style="width:70px; text-align:center;">相片</th>
-        <th style="width:80px; text-align:center;">指示處置</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rowsHtml}
-    </tbody>
-  </table>
-
-  <div class="sig-section">
-    <div class="sig-box">
-      <div class="sig-box-title">1. Sidefame 授權簽署 (客戶方)</div>
-      <div style="font-size:11px; color:#64748b;">授權人: ${applicant}</div>
-      <div class="sig-box-line">授權簽名及公司蓋印 / 日期</div>
-    </div>
-    <div class="sig-box">
-      <div class="sig-box-title">2. 威黃物流執行銷毀簽署 (物流方)</div>
-      <div style="font-size:11px; color:#64748b;">確認已按客戶指示銷毀/棄置完畢</div>
-      <div class="sig-box-line">執行倉管員簽名及日期</div>
-    </div>
-  </div>
-
-  <div style="margin-top:25px; font-size:10px; color:#94a3b8; text-align:center;">
-    威黃物流 Fenix Logistics Services Limited · 道具生命週期銷毀授權記錄單據
-  </div>
-</body>
-</html>
-      `;
-
-      const win = window.open('', '_blank');
-      win.document.write(printHtml);
-      win.document.close();
     }
 
     function handleClientDisposalSubmit(e) {
@@ -1221,181 +1077,4 @@
 
       filtered.forEach(i => {
         const tr = document.createElement("tr");
-        const displayImg = formatPhotoUrl(i.photoPath) || i.img || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'><rect width='400' height='300' fill='%23f1f5f9'/><text x='200' y='145' font-size='42' text-anchor='middle'>📦</text><text x='200' y='190' font-size='14' text-anchor='middle' fill='%2364748b' font-weight='bold'>無相片記錄</text></svg>";
-        const isInStock = i.status === "in-stock";
-        const isDispatched = i.status === "dispatched";
-        const isDisposed = i.status === "disposed";
-
-        let stBadge = `<span style="color: #16a34a; font-weight: 700;">🟢 在庫</span>`;
-        if (isDispatched) stBadge = `<span style="color: #64748b; font-weight: 600;">⚪ 已出庫</span>`;
-        else if (isDisposed) stBadge = `<span style="color: #b45309; font-weight: 700; background: #fef3c7; padding: 2px 6px; border-radius: 4px;">🗑️ 已棄置</span>`;
-
-        let destInfo = "-";
-        if (isDispatched) {
-          destInfo = `${i.dispatchDest} <br><span style='color: #94a3b8; font-size: 0.72rem;'>${(i.dispatchTime||'').substring(0,16)}</span>`;
-        } else if (isDisposed) {
-          destInfo = `<span style='color: #b45309; font-weight: 600;'>[已銷毀處置]</span><br><span style='color: #94a3b8; font-size: 0.72rem;'>${(i.disposalTime||'').substring(0,16)}</span>`;
-        }
-
-        let notesDisplay = i.notes || '';
-        if (isDisposed && i.disposalReason) {
-          notesDisplay = `<span style="color: #b45309; font-weight: 600;">[原因: ${i.disposalReason}]</span> ` + (notesDisplay ? ' | ' + notesDisplay : '');
-        }
-
-        tr.innerHTML = `
-          <td style="text-align: center;">
-            ${isInStock ? `
-            <input type="checkbox" class="client-card-cb" value="${i.id}" ${clientSelectedSet.has(i.id)?'checked':''} onchange="toggleClientItem('${i.id}', this.checked, event)" style="width: 17px; height: 17px; accent-color: #0284c7; cursor: pointer;">
-            ` : '-'}
-          </td>
-          <td style="text-align: center;">
-            <img class="micro-thumb" src="${displayImg}" onclick="viewLightbox('${displayImg}')" title="點擊放大相片" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\' viewBox=\'0 0 40 40\'><rect width=\'40\' height=\'40\' fill=\'%23f1f5f9\'/><text x=\'20\' y=\'25\' font-size=\'18\' text-anchor=\'middle\'>📦</text></svg>';">
-          </td>
-          <td style="font-weight: 700; color: #334155; font-size: 0.78rem;">${i.id}</td>
-          <td style="font-weight: 700; color: #0f172a;">${i.title}</td>
-          <td>${i.source}</td>
-          <td><span style="background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; font-weight: 600;">${i.location}</span></td>
-          <td>${(i.inboundTime || '').substring(0, 16)}</td>
-          <td>${stBadge}</td>
-          <td>${destInfo}</td>
-          <td style="font-size: 0.78rem; max-width: 160px;">${notesDisplay || '-'}</td>
-          <td style="text-align: right; white-space: nowrap;">
-            ${isInStock ? `
-            <button class="btn-c-act btn-c-dispatch" style="padding: 4px 8px; font-size: 0.72rem; display: inline-flex;" onclick="openClientSingleDispatch('${i.id}')">🚚 出庫</button>
-            <button class="btn-c-act btn-c-dispose" style="padding: 4px 8px; font-size: 0.72rem; display: inline-flex; margin-left: 4px;" onclick="openClientSingleDispose('${i.id}')">🗑️ 棄置</button>
-            ` : '-'}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    function renderCards() {
-      updateClientKPIs();
-      const q = document.getElementById("searchKeyword").value.trim().toLowerCase();
-      const grid = document.getElementById("cardsGrid");
-      grid.innerHTML = "";
-
-      let inStock = 0, dispatched = 0, disposed = 0;
-      clientItems.forEach(i => {
-        if (i.status === "in-stock") inStock++;
-        else if (i.status === "dispatched") dispatched++;
-        else if (i.status === "disposed") disposed++;
-      });
-      document.getElementById("countInStock").innerText = inStock;
-      document.getElementById("countDispatched").innerText = dispatched;
-      if (document.getElementById("countDisposed")) {
-        document.getElementById("countDisposed").innerText = disposed;
-      }
-      document.getElementById("countAll").innerText = inStock + dispatched + disposed;
-
-      const filtered = clientItems.filter(i => {
-        const matchesFilter = (currentFilter === "all") ? (i.status !== "removed") : (i.status === currentFilter);
-        const matchesKeyword = !q || 
-          (i.title && i.title.toLowerCase().includes(q)) || 
-          (i.source && i.source.toLowerCase().includes(q)) || 
-          (i.location && i.location.toLowerCase().includes(q)) || 
-          (i.dispatchDest && i.dispatchDest.toLowerCase().includes(q)) ||
-          (i.disposalReason && i.disposalReason.toLowerCase().includes(q)) ||
-          (i.notes && i.notes.toLowerCase().includes(q));
-        return matchesFilter && matchesKeyword && i.status !== "removed";
-      });
-
-      if (filtered.length === 0) {
-        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #94a3b8;">
-          <div style="font-size: 3rem; margin-bottom: 8px;">📭</div>
-          <div style="font-size: 1.05rem; font-weight: 600;">沒有符合條件的道具記錄</div>
-        </div>`;
-        return;
-      }
-
-      filtered.forEach(i => {
-        const card = document.createElement("div");
-        card.className = "item-card" + (clientSelectedSet.has(i.id) ? " is-selected" : "");
-        card.id = "client-card-" + i.id;
-        const isInStock = i.status === "in-stock";
-        const isDispatched = i.status === "dispatched";
-        const isDisposed = i.status === "disposed";
-        const displayImg = formatPhotoUrl(i.photoPath) || i.img || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'><rect width='400' height='300' fill='%23f1f5f9'/><text x='200' y='145' font-size='42' text-anchor='middle'>📦</text><text x='200' y='190' font-size='14' text-anchor='middle' fill='%2364748b' font-weight='bold'>無相片記錄</text></svg>";
-
-        let badgeText = "🟢 在庫中";
-        let badgeCls = "in-stock";
-        if (isDispatched) { badgeText = "⚪ 已出庫"; badgeCls = "dispatched"; }
-        else if (isDisposed) { badgeText = "🗑️ 已棄置"; badgeCls = "disposed"; }
-
-        card.innerHTML = `
-          <div class="img-wrap" onclick="viewLightbox('${displayImg}')">
-            ${isInStock ? `
-            <div class="card-select-btn" onclick="event.stopPropagation()">
-              <input type="checkbox" class="client-card-cb" value="${i.id}" ${clientSelectedSet.has(i.id) ? 'checked' : ''} onchange="toggleClientItem('${i.id}', this.checked, event)">
-              <span>選取</span>
-            </div>` : ''}
-            <img src="${displayImg}" alt="${i.title}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'300\' viewBox=\'0 0 400 300\'><rect width=\'400\' height=\'300\' fill=\'%23f1f5f9\'/><text x=\'200\' y=\'145\' font-size=\'42\' text-anchor=\'middle\'>📦</text><text x=\'200\' y=\'190\' font-size=\'14\' text-anchor=\'middle\' fill=\'%2364748b\' font-weight=\'bold\'>相片載入中</text></svg>';">
-            <div class="status-badge ${badgeCls}">
-              ${badgeText}
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="card-title">${i.title}</div>
-            <div class="info-list">
-              <div class="info-item">
-                <span class="info-label">來源門市</span>
-                <span class="info-val">${i.source}</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">${isDisposed ? '原存放位置' : '存放位置'}</span>
-                <span class="info-val">📍 ${i.location}</span>
-              </div>
-              ${isDispatched ? `
-              <div class="info-item" style="color: #64748b;">
-                <span class="info-label">送往目的地</span>
-                <span class="info-val" style="color: #dc2626;">🚚 ${i.dispatchDest}</span>
-              </div>
-              <div class="info-item" style="color: #64748b;">
-                <span class="info-label">出庫時間</span>
-                <span class="info-val">${(i.dispatchTime || '').substring(0, 16)}</span>
-              </div>` : ''}
-              ${isDisposed ? `
-              <div class="info-item" style="color: #b45309;">
-                <span class="info-label">棄置時間</span>
-                <span class="info-val" style="color: #b45309; font-weight: 700;">${(i.disposalTime || '').substring(0, 16)}</span>
-              </div>
-              <div class="info-item" style="color: #b45309;">
-                <span class="info-label">棄置原因</span>
-                <span class="info-val" style="color: #b45309;">${i.disposalReason || '客人要求棄置'}</span>
-              </div>` : ''}
-              ${i.notes ? `
-              <div class="info-item">
-                <span class="info-label">備註說明</span>
-                <span class="info-val" style="font-size: 0.78rem; font-weight: normal;">${i.notes}</span>
-              </div>` : ''}
-            </div>
-
-            ${isInStock ? `
-            <div class="client-card-actions">
-              <button class="btn-c-act btn-c-dispatch" onclick="openClientSingleDispatch('${i.id}')">
-                🚚 申請出庫
-              </button>
-              <button class="btn-c-act btn-c-dispose" onclick="openClientSingleDispose('${i.id}')">
-                🗑️ 申請棄置
-              </button>
-            </div>` : ''}
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    function viewLightbox(src) {
-      if (!src) return;
-      document.getElementById("lightboxImg").src = src;
-      document.getElementById("lightbox").style.display = "flex";
-    }
-
-    if (sessionStorage.getItem("sf_logged_in") === "true") {
-      document.getElementById("loginOverlay").style.display = "none";
-      loadData();
-    }
-  </script>
-</body>
-</html>
+        const displayImg = formatPhotoUrl(i.photoPath) || i.img || "data:image/svg+xml;utf8,<svg
