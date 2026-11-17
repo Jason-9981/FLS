@@ -514,15 +514,15 @@
     // -------------------------------------------------------------------------
     const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR1_vQqBCDcZkEM3DTcYQ0u6IoW0mp32LxioWlPaw0rCa25syOUGSaXZ4s20Qq5GiI47R1mD5tZh--G/pub?gid=248915067&single=true&output=csv';
 
-    // 您的 Google Drive photos 共享資料夾 ID
+    const API_BASE = (window.location.protocol === 'file:') ? 'http://localhost:8888' : '';
     const GOOGLE_DRIVE_PHOTOS_FOLDER_ID = '1ftBiKp09GErLaZs2AGgAhFHWzWYram_P';
 
-    // 徹底解決 GitHub 遠端相片讀取問題的雲端轉譯器
+    // 完美兼容 GitHub 與內網的智能相片轉譯器
     function formatPhotoUrl(ref) {
       if (!ref) return "";
       ref = ref.trim();
 
-      // 1. 如果已經是完整的網址
+      // 1. 若已經是完整 HTTP 連結
       if (ref.startsWith("http://") || ref.startsWith("https://")) {
         const match = ref.match(/\/d\/([a-zA-Z0-9_-]+)/) || ref.match(/id=([a-zA-Z0-9_-]+)/);
         if (match && match[1]) {
@@ -531,14 +531,13 @@
         return ref;
       }
 
-      // 2. 如果是在內網運行且本地伺服器支援 /photos/ 路徑
-      const isLocalFileServer = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
-      if (isLocalFileServer && ref.startsWith("/photos/")) {
-        return ref; 
+      // 2. 若在公司內網執行且有後端伺服器
+      const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
+      if (isLocal && ref.startsWith("/photos/")) {
+        return ref;
       }
 
-      // 3. 針對 GitHub 遠端獨立運行：直接利用 Google Drive 共享資料夾的公开檢視/縮圖模式
-      // 這樣無論上載幾多張新相，GitHub 都能夠透過雲端順利抓取圖片，徹底解決破圖問題！
+      // 3. 針對 GitHub 獨立遠端：直接把檔名轉化為 Google Drive 檢視/預覽縮圖
       return `https://drive.google.com/thumbnail?id=${GOOGLE_DRIVE_PHOTOS_FOLDER_ID}&sz=w800`;
     }
 
@@ -920,7 +919,7 @@
       <div class="sig-box-line">簽名及日期</div>
     </div>
     <div class="sig-box">
-      <div class="sig-box-title">2. 威黃倉務出貨核對</div>
+      <div class="sig-box-title">2. 威黃物流出貨核對</div>
       <div style="font-size:10px; color:#64748b;">已出庫核實無誤</div>
       <div class="sig-box-line">倉管員簽署</div>
     </div>
@@ -1331,7 +1330,7 @@
               <input type="checkbox" class="client-card-cb" value="${i.id}" ${clientSelectedSet.has(i.id) ? 'checked' : ''} onchange="toggleClientItem('${i.id}', this.checked, event)">
               <span>選取</span>
             </div>` : ''}
-            <img src="${displayImg}" alt="${i.title}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'300\' viewBox=\'0 0 400 300\'><rect width=\'400\' height=\'300\' fill=\'%23f1f5f9\'/><text x=\'200\' y=\'145\' font-size='42' text-anchor='middle'>📦</text><text x=\'200\' y=\'190\' font-size='14' text-anchor='middle' fill='%2364748b' font-weight='bold'>相片載入中</text></svg>';">
+            <img src="${displayImg}" alt="${i.title}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'300\' viewBox=\'0 0 400 300\'><rect width=\'400\' height=\'300\' fill=\'%23f1f5f9\'/><text x=\'200\' y=\'145\' font-size=\'42\' text-anchor=\'middle\'>📦</text><text x=\'200\' y=\'190\' font-size=\'14\' text-anchor=\'middle\' fill=\'%2364748b\' font-weight=\'bold\'>相片載入中</text></svg>';">
             <div class="status-badge ${badgeCls}">
               ${badgeText}
             </div>
