@@ -1077,4 +1077,181 @@
 
       filtered.forEach(i => {
         const tr = document.createElement("tr");
-        const displayImg = formatPhotoUrl(i.photoPath) || i.img || "data:image/svg+xml;utf8,<svg
+        const displayImg = formatPhotoUrl(i.photoPath) || i.img || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'><rect width='400' height='300' fill='%23f1f5f9'/><text x='200' y='145' font-size='42' text-anchor='middle'>📦</text><text x='200' y='190' font-size='14' text-anchor='middle' fill='%2364748b' font-weight='bold'>無相片記錄</text></svg>";
+        const isInStock = i.status === "in-stock";
+        const isDispatched = i.status === "dispatched";
+        const isDisposed = i.status === "disposed";
+
+        let stBadge = `<span style="color: #16a34a; font-weight: 700;">🟢 在庫</span>`;
+        if (isDispatched) stBadge = `<span style="color: #64748b; font-weight: 600;">⚪ 已出庫</span>`;
+        else if (isDisposed) stBadge = `<span style="color: #b45309; font-weight: 700; background: #fef3c7; padding: 2px 6px; border-radius: 4px;">🗑️ 已棄置</span>`;
+
+        let destInfo = "-";
+        if (isDispatched) {
+          destInfo = `${i.dispatchDest} <br><span style='color: #94a3b8; font-size: 0.72rem;'>${(i.dispatchTime||'').substring(0,16)}</span>`;
+        } else if (isDisposed) {
+          destInfo = `<span style='color: #b45309; font-weight: 600;'>[已銷毀處置]</span><br><span style='color: #94a3b8; font-size: 0.72rem;'>${(i.disposalTime||'').substring(0,16)}</span>`;
+        }
+
+        let notesDisplay = i.notes || '';
+        if (isDisposed && i.disposalReason) {
+          notesDisplay = `<span style="color: #b45309; font-weight: 600;">[原因: ${i.disposalReason}]</span> ` + (notesDisplay ? ' | ' + notesDisplay : '');
+        }
+
+        tr.innerHTML = `
+          <td style="text-align: center;">
+            ${isInStock ? `
+            <input type="checkbox" class="client-card-cb" value="${i.id}" ${clientSelectedSet.has(i.id)?'checked':''} onchange="toggleClientItem('${i.id}', this.checked, event)" style="width: 17px; height: 17px; accent-color: #0284c7; cursor: pointer;">
+            ` : '-'}
+          </td>
+          <td style="text-align: center;">
+            <img class="micro-thumb" src="${displayImg}" onclick="viewLightbox('${displayImg}')" title="點擊放大相片" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'40\' viewBox=\'0 0 40 40\'><rect width=\'40\' height=\'40\' fill=\'%23f1f5f9\'/><text x=\'20\' y=\'25\' font-size=\'18\' text-anchor=\'middle\'>📦</text></svg>';">
+          </td>
+          <td style="font-weight: 700; color: #334155; font-size: 0.78rem;">${i.id}</td>
+          <td style="font-weight: 700; color: #0f172a;">${i.title}</td>
+          <td>${i.source}</td>
+          <td><span style="background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; font-weight: 600;">${i.location}</span></td>
+          <td>${(i.inboundTime || '').substring(0, 16)}</td>
+          <td>${stBadge}</td>
+          <td>${destInfo}</td>
+          <td style="font-size: 0.78rem; max-width: 160px;">${notesDisplay || '-'}</td>
+          <td style="text-align: right; white-space: nowrap;">
+            ${isInStock ? `
+            <button class="btn-c-act btn-c-dispatch" style="padding: 4px 8px; font-size: 0.72rem; display: inline-flex;" onclick="openClientSingleDispatch('${i.id}')">🚚 出庫</button>
+            <button class="btn-c-act btn-c-dispose" style="padding: 4px 8px; font-size: 0.72rem; display: inline-flex; margin-left: 4px;" onclick="openClientSingleDispose('${i.id}')">🗑️ 棄置</button>
+            ` : '-'}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderCards() {
+      updateClientKPIs();
+      const q = document.getElementById("searchKeyword").value.trim().toLowerCase();
+      const grid = document.getElementById("cardsGrid");
+      grid.innerHTML = "";
+
+      let inStock = 0, dispatched = 0, disposed = 0;
+      clientItems.forEach(i => {
+        if (i.status === "in-stock") inStock++;
+        else if (i.status === "dispatched") dispatched++;
+        else if (i.status === "disposed") disposed++;
+      });
+      document.getElementById("countInStock").innerText = inStock;
+      document.getElementById("countDispatched").innerText = dispatched;
+      if (document.getElementById("countDisposed")) {
+        document.getElementById("countDisposed").innerText = disposed;
+      }
+      document.getElementById("countAll").innerText = inStock + dispatched + disposed;
+
+      const filtered = clientItems.filter(i => {
+        const matchesFilter = (currentFilter === "all") ? (i.status !== "removed") : (i.status === currentFilter);
+        const matchesKeyword = !q || 
+          (i.title && i.title.toLowerCase().includes(q)) || 
+          (i.source && i.source.toLowerCase().includes(q)) || 
+          (i.location && i.location.toLowerCase().includes(q)) || 
+          (i.dispatchDest && i.dispatchDest.toLowerCase().includes(q)) ||
+          (i.disposalReason && i.disposalReason.toLowerCase().includes(q)) ||
+          (i.notes && i.notes.toLowerCase().includes(q));
+        return matchesFilter && matchesKeyword && i.status !== "removed";
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 60px 20px; color: #94a3b8;">
+          <div style="font-size: 3rem; margin-bottom: 8px;">📭</div>
+          <div style="font-size: 1.05rem; font-weight: 600;">沒有符合條件的道具記錄</div>
+        </div>`;
+        return;
+      }
+
+      filtered.forEach(i => {
+        const card = document.createElement("div");
+        card.className = "item-card" + (clientSelectedSet.has(i.id) ? " is-selected" : "");
+        card.id = "client-card-" + i.id;
+        const isInStock = i.status === "in-stock";
+        const isDispatched = i.status === "dispatched";
+        const isDisposed = i.status === "disposed";
+        const displayImg = formatPhotoUrl(i.photoPath) || i.img || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'><rect width='400' height='300' fill='%23f1f5f9'/><text x='200' y='145' font-size='42' text-anchor='middle'>📦</text><text x='200' y='190' font-size='14' text-anchor='middle' fill='%2364748b' font-weight='bold'>無相片記錄</text></svg>";
+
+        let badgeText = "🟢 在庫中";
+        let badgeCls = "in-stock";
+        if (isDispatched) { badgeText = "⚪ 已出庫"; badgeCls = "dispatched"; }
+        else if (isDisposed) { badgeText = "🗑️ 已棄置"; badgeCls = "disposed"; }
+
+        card.innerHTML = `
+          <div class="img-wrap" onclick="viewLightbox('${displayImg}')">
+            ${isInStock ? `
+            <div class="card-select-btn" onclick="event.stopPropagation()">
+              <input type="checkbox" class="client-card-cb" value="${i.id}" ${clientSelectedSet.has(i.id) ? 'checked' : ''} onchange="toggleClientItem('${i.id}', this.checked, event)">
+              <span>選取</span>
+            </div>` : ''}
+            <img src="${displayImg}" alt="${i.title}" loading="lazy" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'300\' viewBox=\'0 0 400 300\'><rect width=\'400\' height=\'300\' fill=\'%23f1f5f9\'/><text x=\'200\' y=\'145' font-size=\'42' text-anchor=\'middle\'>📦</text><text x=\'200\' y=\'190\' font-size=\'14' text-anchor=\'middle' fill='%2364748b' font-weight='bold'>相片載入中</text></svg>';">
+            <div class="status-badge ${badgeCls}">
+              ${badgeText}
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-title">${i.title}</div>
+            <div class="info-list">
+              <div class="info-item">
+                <span class="info-label">來源門市</span>
+                <span class="info-val">${i.source}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">${isDisposed ? '原存放位置' : '存放位置'}</span>
+                <span class="info-val">📍 ${i.location}</span>
+              </div>
+              ${isDispatched ? `
+              <div class="info-item" style="color: #64748b;">
+                <span class="info-label">送往目的地</span>
+                <span class="info-val" style="color: #dc2626;">🚚 ${i.dispatchDest}</span>
+              </div>
+              <div class="info-item" style="color: #64748b;">
+                <span class="info-label">出庫時間</span>
+                <span class="info-val">${(i.dispatchTime || '').substring(0, 16)}</span>
+              </div>` : ''}
+              ${isDisposed ? `
+              <div class="info-item" style="color: #b45309;">
+                <span class="info-label">棄置時間</span>
+                <span class="info-val" style="color: #b45309; font-weight: 700;">${(i.disposalTime || '').substring(0, 16)}</span>
+              </div>
+              <div class="info-item" style="color: #b45309;">
+                <span class="info-label">棄置源因</span>
+                <span class="info-val" style="color: #b45309;">${i.disposalReason || '客人要求棄置'}</span>
+              </div>` : ''}
+              ${i.notes ? `
+              <div class="info-item">
+                <span class="info-label">備註說明</span>
+                <span class="info-val" style="font-size: 0.78rem; font-weight: normal;">${i.notes}</span>
+              </div>` : ''}
+            </div>
+
+            ${isInStock ? `
+            <div class="client-card-actions">
+              <button class="btn-c-act btn-c-dispatch" onclick="openClientSingleDispatch('${i.id}')">
+                🚚 申請出庫
+              </button>
+              <button class="btn-c-act btn-c-dispose" onclick="openClientSingleDispose('${i.id}')">
+                🗑️ 申請棄置
+              </button>
+            </div>` : ''}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function viewLightbox(src) {
+      if (!src) return;
+      document.getElementById("lightboxImg").src = src;
+      document.getElementById("lightbox").style.display = "flex";
+    }
+
+    if (sessionStorage.getItem("sf_logged_in") === "true") {
+      document.getElementById("loginOverlay").style.display = "none";
+      loadData();
+    }
+  </script>
+</body>
+</html>
